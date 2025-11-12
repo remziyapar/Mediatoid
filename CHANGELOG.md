@@ -1,13 +1,13 @@
 # Changelog
 
-Tüm anlamlı değişiklikler bu dosyada listelenir. Sürümleme SemVer’e uygundur.
+TÃ¼m anlamlÄ± deÄŸiÅŸiklikler bu dosyada listelenir. SÃ¼rÃ¼mleme SemVerâ€™e uygundur.
 
 ## [0.1.0] - 2025-11-12
 ### Added
-- İlk sürüm (Initial release)
-- Core sözleşmeler: IRequest, IRequestHandler, INotification, INotificationHandler, ISender, IPipelineBehavior, IStreamRequest, IStreamRequestHandler
-- Send (Request/Response), Publish (Notification), Stream (IAsyncEnumerable) desteği
-- Pipeline davranışları (open generic) ve deterministik yürütme sırası
+- Ä°lk sÃ¼rÃ¼m (Initial release)
+- Core sÃ¶zleÅŸmeler: IRequest, IRequestHandler, INotification, INotificationHandler, ISender, IPipelineBehavior, IStreamRequest, IStreamRequestHandler
+- Send (Request/Response), Publish (Notification), Stream (IAsyncEnumerable) desteÄŸi
+- Pipeline davranÄ±ÅŸlarÄ± (open generic) ve deterministik yÃ¼rÃ¼tme sÄ±rasÄ±
 - DI entegrasyonu: AddMediatoid(params Assembly[])
-- Basit reflection tabanlı handler keşfi
+- Basit reflection tabanlÄ± handler keÅŸfi
 - xUnit testleri (Send/Publish/Stream/Pipeline)
