@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Mediatoid</RootNamespace>
+    <AssemblyName>Mediatoid.Core</AssemblyName>
+    <PackageId>Mediatoid.Core</PackageId>
+    <Description>Mediatoid core abstractions (IRequest, ISender, Handlers, Pipeline).</Description>
+  </PropertyGroup>
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+</Project>

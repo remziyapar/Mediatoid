@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/.config/" />
+  <Folder Name="/benchmarks/" />
+  <Folder Name="/docs/" />
+  <Folder Name="/eng/" />
+  <Folder Name="/samples/" />
+  <Folder Name="/src/">
+    <Project Path="src/Mediatoid.Core/Mediatoid.Core.csproj" />
+    <Project Path="src/Mediatoid/Mediatoid.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mediatoid.Core.Tests/Mediatoid.Core.Tests.csproj" />
+    <Project Path="tests/Mediatoid.Tests/Mediatoid.Tests.csproj" />
+  </Folder>
+</Solution>
