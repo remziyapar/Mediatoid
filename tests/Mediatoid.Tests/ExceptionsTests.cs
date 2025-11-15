@@ -1,4 +1,3 @@
-using Mediatoid;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediatoid.Tests;
@@ -16,7 +15,10 @@ public class ExceptionsTests
 
         var sender = sp.GetRequiredService<ISender>();
 
-        Task Act() => sender.Send(new UnknownRequest("x")).AsTask();
+        Task Act()
+        {
+            return sender.Send(new UnknownRequest("x")).AsTask();
+        }
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(Act);
 
