@@ -5,12 +5,20 @@
 		<PackageId>Mediatoid</PackageId>
 		<Description>Mediatoid runtime mediator and DI extensions.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<UseLocalCore>true</UseLocalCore>
 	</PropertyGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(UseLocalCore)' == 'true'">
 		<ProjectReference Include="..\Mediatoid.Core\Mediatoid.Core.csproj" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
-		
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(UseLocalCore)' != 'true'">
+		<PackageReference Include="Mediatoid.Core" Version="[0.1.0,0.2.0)" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\docs\pipeline-semantics.md" Pack="true" PackagePath="docs\" />
 		<None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" />

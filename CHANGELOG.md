@@ -2,6 +2,15 @@
 
 Tüm anlamlı değişiklikler bu dosyada listelenir. Sürümleme SemVer'e uygundur.
 
+## [0.2.1] - 2025-11-16
+### Changed
+- Performans: Reflection `MethodInfo` erişimleri cache'lendi (Send/Publish/Stream).
+- Pipeline compose: LINQ `Reverse()` kaldırıldı; tahsis azaltıldı. Behavior yoksa kısa yol ile handler'a geçiş.
+- DI tarama: Aynı assembly tekrar verildiğinde tekilleştirme; `ReflectionTypeLoadException` durumunda yüklenebilen tiplerle devam.
+
+### Notes
+- Public API değişmedi (geriye dönük uyumlu).
+
 ## [0.2.0] - 2025-11-15
 ### Added
 - Send pipeline semantiği belgelendi ve donduruldu (v0.2.0).

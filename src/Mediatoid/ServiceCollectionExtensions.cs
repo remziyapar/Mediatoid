@@ -10,14 +10,11 @@ namespace Mediatoid;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Mediatoid runtime'ını kaydeder ve verilen derlemelerdeki <see cref="IRequestHandler{TRequest,TResponse}"/>,
-    /// <see cref="INotificationHandler{TNotification}"/>, <see cref="IStreamRequestHandler{TRequest,TItem}"/> ve
-    /// <see cref="IPipelineBehavior{TRequest,TResponse}"/> implementasyonlarını otomatik olarak DI konteynerine ekler.
+    /// Registers Mediatoid runtime services and scans the provided assemblies for handler and pipeline implementations.
     /// </summary>
-    /// <param name="services">DI servis koleksiyonu.</param>
-    /// <param name="assemblies">Handler ve pipeline davranışlarının aranacağı derlemeler.</param>
-    /// <returns>Girdi olarak verilen <paramref name="services"/> örneği.</returns>
-    /// <exception cref="ArgumentException">Hiç derleme verilmediğinde fırlatılır.</exception>
+    /// <param name="services">The service collection to add Mediatoid services to.</param>
+    /// <param name="assemblies">Assemblies to scan for handlers and pipeline behaviors.</param>
+    /// <returns>The updated service collection.</returns>
     public static IServiceCollection AddMediatoid(this IServiceCollection services, params Assembly[] assemblies)
     {
         if (assemblies is null || assemblies.Length == 0)
@@ -25,14 +22,24 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ISender, Mediator>();
 
-        // Deterministic scan order: by FullName
-        foreach (var asm in assemblies)
+        // Aynı assembly birden fazla verilmişse tekilleştir
+        foreach (var asm in assemblies.Distinct())
         {
-            var types = asm.GetTypes()
-                .Where(t => !t.IsAbstract && !t.IsInterface)
-                .OrderBy(t => t.FullName, StringComparer.Ordinal);
+            Type[] types;
+            try
+            {
+                types = asm.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                // Yüklenebilen tiplerle devam et
+                types = ex.Types.Where(t => t is not null).Cast<Type>().ToArray();
+            }
 
-            foreach (var type in types)
+            // Deterministic scan order: by FullName
+            foreach (var type in types
+                         .Where(t => !t.IsAbstract && !t.IsInterface)
+                         .OrderBy(t => t.FullName, StringComparer.Ordinal))
             {
                 foreach (var i in type.GetInterfaces())
                 {

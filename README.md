@@ -2,7 +2,6 @@
 
 [![NuGet](https://img.shields.io/nuget/v/Mediatoid.svg)](https://www.nuget.org/packages/Mediatoid)
 [![Downloads](https://img.shields.io/nuget/dt/Mediatoid.svg)](https://www.nuget.org/packages/Mediatoid)
-
 [![NuGet (Core)](https://img.shields.io/nuget/v/Mediatoid.Core.svg)](https://www.nuget.org/packages/Mediatoid.Core)
 [![Downloads (Core)](https://img.shields.io/nuget/dt/Mediatoid.Core.svg)](https://www.nuget.org/packages/Mediatoid.Core)
 
@@ -126,7 +125,7 @@ Semantik (v0.2.0 ile donduruldu):
 - İptal ve hatalar wrap edilmeden yüzeye akar.
 
 Detaylar:
-- Bkz. [Pipeline Semantiği](./docs/pipeline-semantics.md)
+- [Pipeline Semantiği](https://github.com/remziyapar/Mediatoid/blob/main/docs/pipeline-semantics.md)
 
 ## Tasarım İlkeleri
 - Minimal Core sözleşmeler
@@ -141,7 +140,7 @@ Detaylar:
 - Publish/Stream için pipeline (RFC ve tasarım) — sonraki minor sürümde değerlendirilecektir
 
 ## Changelog
-Bkz. [CHANGELOG.md](./CHANGELOG.md)
+Bkz. [CHANGELOG.md](https://github.com/remziyapar/Mediatoid/blob/main/CHANGELOG.md)
 
 ## Lisans
-MIT — [LICENSE](./LICENSE)
+MIT — [LICENSE](https://github.com/remziyapar/Mediatoid/blob/main/LICENSE)
