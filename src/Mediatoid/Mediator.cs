@@ -1,14 +1,12 @@
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using Mediatoid.Pipeline;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediatoid;
 
-internal sealed class Mediator : ISender
+internal sealed class Mediator(IServiceProvider sp) : ISender
 {
-    private readonly IServiceProvider _sp;
-
-    public Mediator(IServiceProvider sp) => _sp = sp;
+    private readonly IServiceProvider _sp = sp;
 
     public async ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
@@ -21,14 +19,22 @@ internal sealed class Mediator : ISender
 
         var behaviorInterface = typeof(IPipelineBehavior<,>).MakeGenericType(requestType, typeof(TResponse));
         var behaviors = ((IEnumerable<object>?)_sp.GetService(typeof(IEnumerable<>).MakeGenericType(behaviorInterface)))
-                        ?? Array.Empty<object>();
+                        ?? [];
 
-        // Handler.Invoke
+        // Handler terminali
         RequestHandlerContinuation<TResponse> terminal = () =>
         {
             var method = handlerInterface.GetMethod("Handle")!;
-            var vt = (ValueTask<TResponse>)method.Invoke(handler, new object[] { request, cancellationToken })!;
-            return vt;
+            try
+            {
+                var vt = (ValueTask<TResponse>)method.Invoke(handler, [request, cancellationToken])!;
+                return vt;
+            }
+            catch (TargetInvocationException tie) when (tie.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+                throw;
+            }
         };
 
         foreach (var behavior in behaviors.Reverse())
@@ -37,10 +43,18 @@ internal sealed class Mediator : ISender
             var next = terminal;
             terminal = () =>
             {
-                var vt = (ValueTask<TResponse>)method.Invoke(
-                    behavior,
-                    new object[] { request, next, cancellationToken })!;
-                return vt;
+                try
+                {
+                    var vt = (ValueTask<TResponse>)method.Invoke(
+                        behavior,
+                        [request, next, cancellationToken])!;
+                    return vt;
+                }
+                catch (TargetInvocationException tie) when (tie.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+                    throw;
+                }
             };
         }
 
@@ -54,13 +68,21 @@ internal sealed class Mediator : ISender
         var notificationType = notification.GetType();
         var handlerInterface = typeof(INotificationHandler<>).MakeGenericType(notificationType);
         var enumerableType = typeof(IEnumerable<>).MakeGenericType(handlerInterface);
-        var handlers = (IEnumerable<object>?)_sp.GetService(enumerableType) ?? Array.Empty<object>();
+        var handlers = (IEnumerable<object>?)_sp.GetService(enumerableType) ?? [];
 
         foreach (var handler in handlers)
         {
             var method = handlerInterface.GetMethod("Handle")!;
-            var vt = (ValueTask)method.Invoke(handler, new object[] { notification, cancellationToken })!;
-            await vt.ConfigureAwait(false);
+            try
+            {
+                var vt = (ValueTask)method.Invoke(handler, [notification, cancellationToken])!;
+                await vt.ConfigureAwait(false);
+            }
+            catch (TargetInvocationException tie) when (tie.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+                throw;
+            }
         }
     }
 
@@ -74,7 +96,15 @@ internal sealed class Mediator : ISender
             ?? throw new InvalidOperationException($"No stream handler registered for request type '{requestType.FullName}'.");
 
         var method = handlerInterface.GetMethod("Handle")!;
-        var result = method.Invoke(handler, new object[] { request, cancellationToken })!;
-        return (IAsyncEnumerable<TItem>)result;
+        try
+        {
+            var result = method.Invoke(handler, [request, cancellationToken])!;
+            return (IAsyncEnumerable<TItem>)result;
+        }
+        catch (TargetInvocationException tie) when (tie.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+            throw;
+        }
     }
 }

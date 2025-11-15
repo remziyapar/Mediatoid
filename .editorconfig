@@ -1,13 +1,13 @@
-root = true
+﻿root = true
 
-[*.{cs}]
+[*.cs]
 charset = utf-8
 end_of_line = crlf
 indent_style = space
 indent_size = 4
 insert_final_newline = true
 
-# .NET/C# dil �zellikleri
+# C# stil tercihleri
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
@@ -22,8 +22,24 @@ csharp_prefer_pattern_matching = true:suggestion
 csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_new_line_before_open_brace = all
 
-# Analyzer�lar (�rnek �iddet ayarlar�)
+# Expression-bodied ctor tercihi (block body uyarılarını agresifleştirmemek için)
+csharp_style_expression_bodied_constructors = when_on_single_line:suggestion
+
+# Genel varsayılan şiddet
 dotnet_analyzer_diagnostic.severity = warning
-dotnet_diagnostic.IDE0058.severity = warning   # expression value is never used
-dotnet_diagnostic.CA2000.severity = warning    # dispose objects
-dotnet_diagnostic.CA1062.severity = warning    # validate arguments
+
+# Kritik kurallar: build'i kır (hata)
+dotnet_diagnostic.CA2000.severity = error   # dispose edilmeyen nesneler
+dotnet_diagnostic.CA1062.severity = error   # argüman null doğrulama
+dotnet_diagnostic.CS8600.severity = error   # nullability atama
+dotnet_diagnostic.CS8602.severity = error   # muhtemel null deref
+dotnet_diagnostic.CS8603.severity = error
+dotnet_diagnostic.CS8604.severity = error
+dotnet_diagnostic.CS8618.severity = error   # non-null init edilmemiş
+dotnet_diagnostic.CS8625.severity = error
+
+# Stil/tercih kuralları: öneri/uyarı (build'i kırmasın)
+dotnet_diagnostic.IDE0005.severity = suggestion   # gereksiz using
+dotnet_diagnostic.IDE0028.severity = suggestion   # collection init simplify
+dotnet_diagnostic.IDE0058.severity = suggestion   # expression result not used
+dotnet_diagnostic.IDE0290.severity = suggestion   # use primary constructor
