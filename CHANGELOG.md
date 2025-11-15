@@ -1,27 +1,27 @@
 # Changelog
 
-Tüm anlamlı değişiklikler bu dosyada listelenir. Sürümleme SemVer’e uygundur.
+TÃ¼m anlamlÄ± deÄŸiÅŸiklikler bu dosyada listelenir. SÃ¼rÃ¼mleme SemVer'e uygundur.
 
 ## [0.2.0] - 2025-11-15
 ### Added
-- Send pipeline semantiği belgelendi ve donduruldu (v0.2.0).
-- Yeni dokümantasyon: `docs/pipeline-semantics.md`.
-- README “Pipeline Davranışları (Send)” bölümü güncellendi.
+- Send pipeline semantiÄŸi belgelendi ve donduruldu (v0.2.0).
+- Yeni dokÃ¼mantasyon: `docs/pipeline-semantics.md`.
+- README "Pipeline DavranÄ±ÅŸlarÄ± (Send)" bÃ¶lÃ¼mÃ¼ gÃ¼ncellendi.
 
 ### Changed
-- Pipeline sıra/compose kuralları ve kapsamı (yalnızca Send) açıkça dokümante edildi.
-- Publish/Stream için pipeline olmadığı README’de netleştirildi.
+- Pipeline sÄ±ra/compose kurallarÄ± ve kapsamÄ± (yalnÄ±zca Send) aÃ§Ä±kÃ§a dokÃ¼mante edildi.
+- Publish/Stream iÃ§in pipeline olmadÄ±ÄŸÄ± README'de netleÅŸtirildi.
 
 ### Notes
-- Bu sürümde public API değişikliği yoktur (geriye dönük uyumludur).
-- Performans iyileştirmeleri bir sonraki patch/minor sürümlerde ele alınacaktır.
+- Bu sÃ¼rÃ¼mde public API deÄŸiÅŸikliÄŸi yoktur (geriye dÃ¶nÃ¼k uyumludur).
+- Performans iyileÅŸtirmeleri bir sonraki patch/minor sÃ¼rÃ¼mlerde ele alÄ±nacaktÄ±r.
 
 ## [0.1.0] - 2025-11-12
 ### Added
-- İlk sürüm (Initial release)
-- Core sözleşmeler: IRequest, IRequestHandler, INotification, INotificationHandler, ISender, IPipelineBehavior, IStreamRequest, IStreamRequestHandler
-- Send (Request/Response), Publish (Notification), Stream (IAsyncEnumerable) desteği
-- Pipeline davranışları (open generic) ve deterministik yürütme sırası
+- Ä°lk sÃ¼rÃ¼m (Initial release)
+- Core sÃ¶zleÅŸmeler: IRequest, IRequestHandler, INotification, INotificationHandler, ISender, IPipelineBehavior, IStreamRequest, IStreamRequestHandler
+- Send (Request/Response), Publish (Notification), Stream (IAsyncEnumerable) desteÄŸi
+- Pipeline davranÄ±ÅŸlarÄ± (open generic) ve deterministik yÃ¼rÃ¼tme sÄ±rasÄ±
 - DI entegrasyonu: AddMediatoid(params Assembly[])
-- Basit reflection tabanlı handler keşfi
+- Basit reflection tabanlÄ± handler keÅŸfi
 - xUnit testleri (Send/Publish/Stream/Pipeline)
