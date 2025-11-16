@@ -1,25 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<PackageId>Mediatoid</PackageId>
-		<AssemblyName>Mediatoid</AssemblyName>
-		<Description>Mediatoid runtime mediator and DI extensions.</Description>
+		<PackageId>Mediatoid.SourceGen</PackageId>
+		<AssemblyName>Mediatoid.SourceGen</AssemblyName>
+		<Description>Source generator for Mediatoid (handler discovery optimization).</Description>
 		<Authors>remziyapar</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/remziyapar/Mediatoid</RepositoryUrl>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>mediator;cqrs;pipeline</PackageTags>
+		<IsRoslynComponent>true</IsRoslynComponent>
+		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<PackageTags>mediator;cqrs;pipeline;source-generator</PackageTags>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Mediatoid.Core" Version="[0.3.0,)" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
-		<None Include="..\..\docs\pipeline-semantics.md" Pack="true" PackagePath="docs\" />
 	</ItemGroup>
 </Project>

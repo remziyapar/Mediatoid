@@ -1,18 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
-		<PackageId>Mediatoid.Core</PackageId>
-		<AssemblyName>Mediatoid.Core</AssemblyName>
-		<RootNamespace>Mediatoid</RootNamespace>
-		<Description>Mediatoid core abstractions (IRequest, ISender, Handlers, Pipeline).</Description>
+		<PackageId>Mediatoid.Behaviors</PackageId>
+		<Description>Optional cross-cutting behaviors (logging, validation) for Mediatoid.</Description>
 		<Authors>remziyapar</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/remziyapar/Mediatoid</RepositoryUrl>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>mediator;cqrs;pipeline</PackageTags>
+		<PackageTags>mediator;cqrs;pipeline;logging;validation</PackageTags>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Mediatoid.Core" Version="[0.3.0,)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+		<PackageReference Include="FluentValidation" Version="11.9.0" />
+	</ItemGroup>
 	<ItemGroup>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" />

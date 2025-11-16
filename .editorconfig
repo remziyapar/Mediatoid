@@ -48,3 +48,21 @@ dotnet_diagnostic.IDE0005.severity = suggestion   # gereksiz using
 dotnet_diagnostic.IDE0028.severity = suggestion   # collection init simplify
 dotnet_diagnostic.IDE0058.severity = suggestion   # expression result not used
 dotnet_diagnostic.IDE0290.severity = suggestion   # use primary constructor
+
+# Test projelerinde XML doc uyarılarını kapat
+[tests/**/*.cs]
+dotnet_diagnostic.CS1591.severity = none        # Missing XML comment
+dotnet_diagnostic.SA1600.severity = none        # Elements must be documented
+dotnet_diagnostic.SA1601.severity = none        # Partial elements must be documented
+dotnet_diagnostic.SA1611.severity = none        # Parameter must be documented
+dotnet_diagnostic.SA1612.severity = none        # Returns must be documented
+dotnet_diagnostic.SA1615.severity = none        # Generic type params must be documented
+
+[benchmarks/**/*.cs]
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1601.severity = none
+dotnet_diagnostic.SA1611.severity = none
+dotnet_diagnostic.SA1612.severity = none
+dotnet_diagnostic.SA1615.severity = none
+dotnet_diagnostic.SA1618.severity = none

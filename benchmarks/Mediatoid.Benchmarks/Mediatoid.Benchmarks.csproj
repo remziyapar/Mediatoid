@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Mediatoid.Core\Mediatoid.Core.csproj" />
+		<ProjectReference Include="..\..\src\Mediatoid\Mediatoid.csproj" />
+		<ProjectReference Include="..\..\src\Mediatoid.Behaviors\Mediatoid.Behaviors.csproj" />
+		<ProjectReference Include="..\..\src\Mediatoid.SourceGen\Mediatoid.SourceGen.csproj" />
+		<PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
+		<PackageReference Include="FluentValidation" Version="11.9.0" />
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+	</ItemGroup>
+</Project>

@@ -1,14 +1,19 @@
 <Solution>
   <Folder Name="/.config/" />
-  <Folder Name="/benchmarks/" />
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Mediatoid.Benchmarks/Mediatoid.Benchmarks.csproj" Id="332bc870-2ed6-41b2-86b5-e061ae845c44" />
+  </Folder>
   <Folder Name="/docs/" />
   <Folder Name="/eng/" />
   <Folder Name="/samples/" />
   <Folder Name="/src/">
+    <Project Path="src/Mediatoid.Behaviors/Mediatoid.Behaviors.csproj" Id="f3296725-dbba-41fd-a1a0-48f6fd9af15a" />
     <Project Path="src/Mediatoid.Core/Mediatoid.Core.csproj" />
+    <Project Path="src/Mediatoid.SourceGen/Mediatoid.SourceGen.csproj" Id="313442d4-6933-4d4f-a245-6831810b0ddf" />
     <Project Path="src/Mediatoid/Mediatoid.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Mediatoid.Behaviors.Tests/Mediatoid.Behaviors.Tests.csproj" Id="eddd685e-e61a-48af-a0f9-8403fb313389" />
     <Project Path="tests/Mediatoid.Core.Tests/Mediatoid.Core.Tests.csproj" />
     <Project Path="tests/Mediatoid.Tests/Mediatoid.Tests.csproj" />
   </Folder>
