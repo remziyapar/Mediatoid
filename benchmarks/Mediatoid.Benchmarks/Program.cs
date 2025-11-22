@@ -11,7 +11,9 @@ using System.Runtime.CompilerServices;
 /// </summary>
 internal static class Program
 {
-    private static void Main() => BenchmarkRunner.Run<MediatorBenchmarks>();
+    //private static void Main() => BenchmarkRunner.Run<MediatorBenchmarks>();
+    private static void Main(string[] args) =>
+        BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
 }
 
 /// <summary>Basit ping isteği.</summary>

@@ -4,6 +4,10 @@
 [![Downloads](https://img.shields.io/nuget/dt/Mediatoid.svg)](https://www.nuget.org/packages/Mediatoid)
 [![NuGet (Core)](https://img.shields.io/nuget/v/Mediatoid.Core.svg)](https://www.nuget.org/packages/Mediatoid.Core)
 [![Downloads (Core)](https://img.shields.io/nuget/dt/Mediatoid.Core.svg)](https://www.nuget.org/packages/Mediatoid.Core)
+[![NuGet (Behaviors)](https://img.shields.io/nuget/v/Mediatoid.Behaviors.svg)](https://www.nuget.org/packages/Mediatoid.Behaviors)
+[![Downloads (Behaviors)](https://img.shields.io/nuget/dt/Mediatoid.Behaviors.svg)](https://www.nuget.org/packages/Mediatoid.Behaviors)
+[![NuGet (SourceGen)](https://img.shields.io/nuget/v/Mediatoid.SourceGen.svg)](https://www.nuget.org/packages/Mediatoid.SourceGen)
+[![Downloads (SourceGen)](https://img.shields.io/nuget/dt/Mediatoid.SourceGen.svg)](https://www.nuget.org/packages/Mediatoid.SourceGen)
 
 Hafif, performans odaklı, extensible bir Mediator kütüphanesi. CQRS için:
 

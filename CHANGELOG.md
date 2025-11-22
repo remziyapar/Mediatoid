@@ -1,6 +1,22 @@
 # Changelog
 Tüm anlamlı değişiklikler bu dosyada listelenir. Sürümleme SemVer'e uygundur.
 
+## [0.3.1] - 2025-11-22
+### Changed
+- Performans (Send): Pipeline compose nested closure zinciri yerine tek `Next()` continuation + tek/iki behavior kısa yol; derinlik arttığında tahsis artışı azaltıldı.
+- Performans (Invoker'lar): `Expression.Compile` kaldırıldı; generic static lambda tabanlı handler/behavior/notification/stream invoker üretimi ile cold start süresi ve tahsisi düşürüldü.
+- Publish: Handler enumerasyonu tek seferde array'e materialize edilip boş durumda erken çıkış yapıldı.
+
+### Benchmark Özet (önce → sonra)
+- Send Baseline Alloc: ~1832 B → ~1448 B
+- Send Depth8 Alloc: ~2.85 KB → ~2.16 KB
+- Send Cold Start: ~25.68 µs / 26.6 KB → ~23.96 µs / 25.48 KB
+
+### Notes
+- Public API değişmedi.
+- Tam pipeline zincirinin build-time üretimi (daha fazla cold start azaltımı) v0.4.0 hedefinde.
+- Benchmark detayları `docs/benchmarks.md` içinde.
+
 ## [0.3.0] - 2025-11-18
 ### Added
 - Paket: Mediatoid.Behaviors (LoggingBehavior, ValidationBehavior).

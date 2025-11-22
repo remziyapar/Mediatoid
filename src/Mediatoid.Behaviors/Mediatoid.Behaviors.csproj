@@ -12,7 +12,6 @@
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Mediatoid.Core" Version="[0.3.0,)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
 		<PackageReference Include="FluentValidation" Version="11.9.0" />
@@ -21,5 +20,8 @@
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Mediatoid.Core\Mediatoid.Core.csproj" />
 	</ItemGroup>
 </Project>

@@ -13,7 +13,6 @@
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Mediatoid.Core" Version="[0.3.0,)" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
 	</ItemGroup>
 	<ItemGroup>
@@ -21,5 +20,8 @@
 		<None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
 		<None Include="..\..\docs\pipeline-semantics.md" Pack="true" PackagePath="docs\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Mediatoid.Core\Mediatoid.Core.csproj" />
 	</ItemGroup>
 </Project>
