@@ -1,6 +1,26 @@
 # Changelog
 Tüm anlamlı değişiklikler bu dosyada listelenir. Sürümleme SemVer'e uygundur.
 
+## [0.4.0-preview.1] - 2025-11-27
+### Added
+- Yeni dokümantasyon: `docs/architecture-and-roadmap.md` (mimari katmanlar, davranış sözleşmeleri ve v0.4.x yol haritası).
+- SourceGen testleri için sözleşme odaklı senaryolar:
+	- Generated tiplerin ve dispatch API'sinin varlığını doğrulayan smoke testler.
+	- Pipeline davranışlarının (before/after, short-circuit, sıra) SourceGen + runtime yollarında gözlemlenmesi.
+
+### Changed
+- `Mediator` içinde SourceGen hızlı yolu (GeneratedDispatchCache) yeniden ele alındı:
+	- Generated tip ilk anda AppDomain'de yüklü değilse `_initialized` bayrağı latch edilmez; sonraki `Send` çağrılarında tekrar denenir.
+	- `Mediatoid.Generated.MediatoidGeneratedDispatch.TryInvoke` metodu başarıyla bulunduğunda fast-path kalıcı olarak devreye alınır.
+- SourceGen testleri, eski call-count beklentilerinden arındırılıp behavior log prefix'leri ve diagnostik adımlar üzerinden doğrulama yapacak şekilde sadeleştirildi.
+
+### Notes
+- Bu sürüm **preview** niteliğindedir; özellikle `Mediatoid.SourceGen` tarafı v0.4.x boyunca evrimleşmeye devam edecektir.
+- Gelecek iş listesi (özet):
+	- SourceGen ile üretilen pipeline zincirinde de `MediatoidDiagnostics` entegrasyonu.
+	- Generated ve runtime yolları arasında adım adım davranış eşitliğini test eden ek contract testleri.
+	- Tam pipeline zinciri üretiminin (handler + behaviors) stabilize edilmesi.
+
 ## [0.3.1] - 2025-11-22
 ### Changed
 - Performans (Send): Pipeline compose nested closure zinciri yerine tek `Next()` continuation + tek/iki behavior kısa yol; derinlik arttığında tahsis artışı azaltıldı.

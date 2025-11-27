@@ -15,10 +15,6 @@ public static class ServiceCollectionExtensions
     /// Mediatoid runtime servislerini kaydeder ve verilen derlemelerde handler/pipeline implementasyonlarını tarar.
     /// Source generator çıktısı mevcutsa handler kayıtları oradan yapılır, aksi halde reflection kullanılır.
     /// </summary>
-    /// <param name="services">Mediatoid servislerinin kaydedileceği koleksiyon.</param>
-    /// <param name="assemblies">Handler ve pipeline davranış implementasyonlarının taranacağı derlemeler.</param>
-    /// <returns>Güncellenmiş servis koleksiyonu.</returns>
-    /// <exception cref="ArgumentException">Hiç assembly verilmemişse fırlatılır.</exception>
     public static IServiceCollection AddMediatoid(this IServiceCollection services, params Assembly[] assemblies)
     {
         if (assemblies is null || assemblies.Length == 0)
@@ -26,21 +22,15 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ISender, Mediator>();
 
-        // 1) SourceGen registry varsa handler kayıtlarını buradan yap
+        // SourceGen registry varsa handler kayıtlarını buradan yap (duplicate kontrolü için set döner)
         var generatedMaps = TryRegisterGeneratedHandlers(services);
 
-        // 2) Reflection taraması: sadece behaviors (deterministik sıra) + gerektiğinde (registry yoksa) handler'lar
+        // Reflection taraması: behaviors (her zaman) + gerekirse (registry yoksa veya eksikse) handler'lar
         foreach (var asm in assemblies.Distinct())
         {
             Type[] types;
-            try
-            {
-                types = asm.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                types = ex.Types.Where(t => t is not null).Cast<Type>().ToArray();
-            }
+            try { types = asm.GetTypes(); }
+            catch (ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t is not null).Cast<Type>().ToArray(); }
 
             foreach (var type in types.Where(t => !t.IsAbstract && !t.IsInterface)
                                       .OrderBy(t => t.FullName, StringComparer.Ordinal))
@@ -50,25 +40,30 @@ public static class ServiceCollectionExtensions
                     if (!i.IsGenericType) continue;
                     var def = i.GetGenericTypeDefinition();
 
-                    // Behaviors: her zaman deterministik sıralı kayıt
+                    // Behaviors: interface mapping + concrete (generator concrete çözer)
                     if (def == typeof(IPipelineBehavior<,>))
                     {
                         if (type.IsGenericTypeDefinition)
+                        {
                             services.AddTransient(typeof(IPipelineBehavior<,>), type);
+                            services.AddTransient(type); // open generic concrete
+                        }
                         else
+                        {
                             services.AddTransient(i, type);
-
+                            services.AddTransient(type); // closed concrete
+                        }
                         continue;
                     }
 
-                    // Handlers: eğer SourceGen kayıtları varsa, duplicate ekleme; yoksa reflection ile ekle
+                    // Handlers: SourceGen varsa duplicate engelle; concrete yalnızca generated path'te eklenmiştir
                     if (def == typeof(IRequestHandler<,>) ||
                         def == typeof(INotificationHandler<>) ||
                         def == typeof(IStreamRequestHandler<,>))
                     {
                         if (generatedMaps is not null)
                         {
-                            // Generated haritasında zaten varsa atla, yoksa ekle (nadir senaryolarda kapsama dışı olabilir)
+                            // Generated haritasında yoksa interface mapping ekle
                             if (!generatedMaps.Contains((i, type)))
                             {
                                 if (type.IsGenericTypeDefinition)
@@ -79,6 +74,7 @@ public static class ServiceCollectionExtensions
                         }
                         else
                         {
+                            // Reflection path: yalnız interface mapping; concrete ekleme yok
                             if (type.IsGenericTypeDefinition)
                                 services.AddTransient(def, type);
                             else
@@ -92,7 +88,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    // Generated registry varsa: Maps alanını okuyup DI'a ekler, ayrıca duplicate kontrolü için set döndürür.
+    /// <summary>
+    /// Generated registry varsa: Maps alanını okuyup DI'a ekler, ayrıca duplicate kontrolü için set döndürür.
+    /// Concrete handler tipi yalnızca burada eklenir (generated pipeline invoker'ları concrete çözer).
+    /// </summary>
     private static HashSet<(Type Service, Type Implementation)>? TryRegisterGeneratedHandlers(IServiceCollection services)
     {
         try
@@ -101,7 +100,6 @@ public static class ServiceCollectionExtensions
                 .GetAssemblies()
                 .Select(a => a.GetType("Mediatoid.Generated.MediatoidGeneratedRegistry", throwOnError: false, ignoreCase: false))
                 .FirstOrDefault(t => t is not null);
-
             if (regType is null)
                 return null;
 
@@ -121,7 +119,11 @@ public static class ServiceCollectionExtensions
                 var service = (Type)t.GetField("Service")!.GetValue(item)!;
                 var impl = (Type)t.GetField("Implementation")!.GetValue(item)!;
 
+                // Interface → implementation
                 services.AddTransient(service, impl);
+                // Concrete handler (yalnız generated path'te)
+                services.AddTransient(impl);
+
                 _ = set.Add((service, impl));
             }
 
@@ -129,8 +131,10 @@ public static class ServiceCollectionExtensions
         }
         catch
         {
-            // Herhangi bir sebeple okunamazsa sessizce fallback yap
             return null;
         }
     }
+
+    private static bool ServiceExists(IServiceCollection services, Type concrete)
+        => services.Any(d => d.ServiceType == concrete);
 }

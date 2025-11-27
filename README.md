@@ -141,7 +141,8 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 
 **Detaylar:**
 
-  - [Pipeline Semantiği](https://github.com/remziyapar/Mediatoid/blob/main/docs/pipeline-semantics.md)
+    - [Mimari ve Yol Haritası](https://github.com/remziyapar/Mediatoid/blob/main/docs/architecture-and-roadmap.md)
+    - [Pipeline Semantiği](https://github.com/remziyapar/Mediatoid/blob/main/docs/pipeline-semantics.md)
 
 ## Opsiyonel Paketler
 
@@ -194,8 +195,11 @@ dotnet add package Mediatoid.SourceGen
 
 Ek konfigurasyon gerekmez; paket eklendiğinde generator devreye girer. Pipeline davranış zinciri (behaviors) hâlâ runtime’da compose edilir (deterministik sıra korunur).
 
-> **Not:**
-> Tam pipeline zincirinin (handler + behavior delegate’lerinin compile-time üretimi) sonraki minor sürümde (v0.4.x) eklenmesi planlanmaktadır. Şu an SourceGen yalnızca handler terminal optimizasyonu yapar.
+> **Not (preview):**
+> 0.4.0-preview.* sürümlerinde SourceGen tarafı hâlâ evrim halindedir. Tam pipeline zincirinin
+> (handler + behavior delegate’lerinin compile-time üretimi) ve diagnostik entegrasyonunun
+> v0.4.x serisinde kademeli olarak eklenmesi planlanmaktadır. Şu an SourceGen ağırlıklı olarak
+> handler terminal optimizasyonu ve temel dispatch hızlandırması sağlar.
 
 ## Benchmark
 

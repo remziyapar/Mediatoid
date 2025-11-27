@@ -1,44 +1,44 @@
-# Send Pipeline Semantiği (v0.2.0)
+# Send Pipeline SemantiÄŸi (v0.2.0)
 
-Bu doküman, `IPipelineBehavior<TRequest, TResponse>` için çalışma kurallarını ve garanti edilen semantiği tanımlar.
+Bu dokÃ¼man, `IPipelineBehavior<TRequest, TResponse>` iÃ§in Ã§alÄ±ÅŸma kurallarÄ±nÄ± ve garanti edilen semantiÄŸi tanÄ±mlar.
 
 ## Kapsam
-- Pipeline yalnızca `Send` (Request/Response) çağrıları için uygulanır.
-- `Publish` (Notification) ve `Stream` (IAsyncEnumerable) için pipeline v0.2.0 sürümünde yoktur.
+- Pipeline yalnÄ±zca `Send` (Request/Response) Ã§aÄŸrÄ±larÄ± iÃ§in uygulanÄ±r.
+- `Publish` (Notification) ve `Stream` (IAsyncEnumerable) iÃ§in pipeline v0.2.0 sÃ¼rÃ¼mÃ¼nde yoktur.
 
-## Kayıt ve Sıra (Deterministik)
-- Kayıt sırası DI konteynerine eklenme sırasıdır ve yürütme sırasını belirler.
+## KayÄ±t ve SÄ±ra (Deterministik)
+- KayÄ±t sÄ±rasÄ± DI konteynerine eklenme sÄ±rasÄ±dÄ±r ve yÃ¼rÃ¼tme sÄ±rasÄ±nÄ± belirler.
 - `AddMediatoid(params Assembly[])`:
-  - Assembly parametrelerinin verili sırası dikkate alınır (soldan sağa).
-  - Her assembly içinde, taranan tipler `Type.FullName` alfabetik (Ordinal) olarak sıralanır.
-- Compose kuralı: “dıştan içe”. Yani önce kaydedilen behavior en dış katman olur.
+  - Assembly parametrelerinin verili sÄ±rasÄ± dikkate alÄ±nÄ±r (soldan saÄŸa).
+  - Her assembly iÃ§inde, taranan tipler `Type.FullName` alfabetik (Ordinal) olarak sÄ±ralanÄ±r.
+- Compose kuralÄ±: dÄ±ÅŸtan iÃ§e. Yani Ã¶nce kaydedilen behavior en dÄ±ÅŸ katman olur.
 
-## Yaşam Döngüsü (Lifetime)
-- Varsayılan olarak behavior’lar ve handler’lar `Transient` kaydedilir.
+## YaÅŸam DÃ¶ngÃ¼sÃ¼ (Lifetime)
+- VarsayÄ±lan olarak behavior'lar ve handler'lar `Transient` kaydedilir.
 - `ISender` `Scoped` olarak kaydedilir.
-- İhtiyaç halinde kullanıcı kendi DI kayıtlarıyla `Scoped`/`Singleton` override edebilir.
+- Ä°htiyaÃ§ halinde kullanÄ±cÄ± kendi DI kayÄ±tlarÄ±yla `Scoped`/`Singleton` override edebilir.
 
-## Open/Closed Generic Desteği
-- `IPipelineBehavior<,>` open-generic olarak tanımlanabilir.
-- Open-generic ve closed-generic behavior’lar birlikte çözümlenebilir; kayıt sırası kuralları aynen geçerlidir.
+## Open/Closed Generic DesteÄŸi
+- `IPipelineBehavior<,>` open-generic olarak tanÄ±mlanabilir.
+- Open-generic ve closed-generic behavior'lar birlikte Ã§Ã¶zÃ¼mlebilir; kayÄ±t sÄ±rasÄ± kurallarÄ± aynen geÃ§erlidir.
 
 ## Short-circuit
-- Bir behavior `continuation()` çağrısını atlayarak akışı sonlandırabilir ve doğrudan `TResponse` dönebilir.
-- Short-circuit deterministiktir ve geçerli bir kullanımdır.
+- Bir behavior `continuation()` Ã§aÄŸrÄ±sÄ±nÄ± atlayarak akÄ±ÅŸÄ± sonlandÄ±rabilir ve doÄŸrudan `TResponse` dÃ¶nebilir.
+- Short-circuit deterministiktir ve geÃ§erli bir kullanÄ±mdÄ±r.
 
-## İptal (Cancellation)
+## Ä°ptal (Cancellation)
 - `CancellationToken` zincirin son parametresi olarak akar.
-- Behavior/handler iptal durumunda uygun şekilde `ThrowIfCancellationRequested()` çağırabilir.
-- İptal istisnaları wrap edilmeden yüzeye çıkar.
+- Behavior/handler iptal durumunda uygun ÅŸekilde `ThrowIfCancellationRequested()` Ã§aÄŸÄ±rabilir.
+- Ä°ptal istisnalarÄ± wrap edilmeden yÃ¼zeye Ã§Ä±kar.
 
 ## Hatalar (Exceptions)
-- Behavior veya handler tarafından fırlatılan istisnalar sarmalanmadan (wrap edilmeden) aynı türde dışarıya akar.
-- Yürütme sırası veya compose kuralları hata durumunda değişmez.
+- Behavior veya handler tarafÄ±ndan fÄ±rlatÄ±lan istisnalar sarmalanmadan (wrap edilmeden) aynÄ± tÃ¼rde dÄ±ÅŸarÄ±ya akar.
+- YÃ¼rÃ¼tme sÄ±rasÄ± veya compose kurallarÄ± hata durumunda deÄŸiÅŸmez.
 
 ## Thread-safety ve Reentrancy
-- Her `Send` çağrısında behavior’lar ve handler’lar yeniden çözülür (transient).
-- Paylaşılan durum kullanılacaksa kullanıcı tarafında uygun senkronizasyon sağlanmalıdır.
+- Her `Send` Ã§aÄŸrÄ±sÄ±nda behavior'lar ve handler'lar yeniden Ã§Ã¶zÃ¼lÃ¼r (transient).
+- PaylaÅŸÄ±lan durum kullanÄ±lacaksa kullanÄ±cÄ± tarafÄ±nda uygun senkronizasyon saÄŸlanmalÄ±dÄ±r.
 
-## Sürümleme Garantisi
-- Bu semantik v0.2.0 ile dondurulmuştur. Geriye dönük uyumlu kalması hedeflenir.
-- Değişiklik ihtiyacı doğarsa dokümantasyon ve sürüm notlarıyla birlikte minor/major artırımı yapılır.
+## SÃ¼rÃ¼mleme Garantisi
+- Bu semantik v0.2.0 ile dondurulmuÅŸtur. Geriye dÃ¶nÃ¼k uyumlu kalmasÄ± hedeflenir.
+- DeÄŸiÅŸiklik ihtiyacÄ± doÄŸarsa dokÃ¼mantasyon ve sÃ¼rÃ¼m notlarÄ±yla birlikte minor/major artÄ±rÄ±mÄ± yapÄ±lÄ±r.

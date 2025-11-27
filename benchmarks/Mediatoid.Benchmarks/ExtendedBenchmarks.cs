@@ -46,21 +46,49 @@ public class PipelineDepthBenchmarks
     private ISender _d8 = default!;
     private readonly DepthPing _ping = new("x");
 
+    // Provider'lar CA2000 için tutulup GlobalCleanup'ta dispose edilir
+    private ServiceProvider _sp0 = default!;
+    private ServiceProvider _sp1 = default!;
+    private ServiceProvider _sp2 = default!;
+    private ServiceProvider _sp4 = default!;
+    private ServiceProvider _sp8 = default!;
+
     [GlobalSetup]
     public void Setup()
     {
-        _d0 = Build(0);
-        _d1 = Build(1);
-        _d2 = Build(2);
-        _d4 = Build(4);
-        _d8 = Build(8);
+        _sp0 = BuildDepthProvider(0);
+        _sp1 = BuildDepthProvider(1);
+        _sp2 = BuildDepthProvider(2);
+        _sp4 = BuildDepthProvider(4);
+        _sp8 = BuildDepthProvider(8);
+
+        _d0 = _sp0.GetRequiredService<ISender>();
+        _d1 = _sp1.GetRequiredService<ISender>();
+        _d2 = _sp2.GetRequiredService<ISender>();
+        _d4 = _sp4.GetRequiredService<ISender>();
+        _d8 = _sp8.GetRequiredService<ISender>();
     }
 
-    private static ISender Build(int depth)
+    [GlobalCleanup]
+    public void Cleanup()
     {
-        var sc = new ServiceCollection().AddMediatoid(typeof(PipelineDepthBenchmarks).Assembly);
-        // Assembly ordinal taramasına göre behavior tip isimleri sıralanacak.
-        // Derinlik kadar tip eklemek için koşullu registration.
+        _sp0?.Dispose();
+        _sp1?.Dispose();
+        _sp2?.Dispose();
+        _sp4?.Dispose();
+        _sp8?.Dispose();
+    }
+
+    private static ServiceProvider BuildDepthProvider(int depth)
+    {
+        // Bu assembly'i tarama: behaviors tüm derinliklerde otomatik eklenirdi.
+        // Bunun yerine nötr bir assembly verip gerekenleri manuel ekliyoruz.
+        var sc = new ServiceCollection().AddMediatoid(typeof(object).Assembly);
+
+        // Handler kaydı (manuel)
+        sc.AddTransient<IRequestHandler<DepthPing, string>, DepthPingHandler>();
+
+        // Derinlik kadar behavior ekle (deterministik kayıt sırası)
         if (depth >= 1) sc.AddTransient(typeof(IPipelineBehavior<,>), typeof(DepthBehavior1<,>));
         if (depth >= 2) sc.AddTransient(typeof(IPipelineBehavior<,>), typeof(DepthBehavior2<,>));
         if (depth >= 3) sc.AddTransient(typeof(IPipelineBehavior<,>), typeof(DepthBehavior3<,>));
@@ -69,7 +97,8 @@ public class PipelineDepthBenchmarks
         if (depth >= 6) sc.AddTransient(typeof(IPipelineBehavior<,>), typeof(DepthBehavior6<,>));
         if (depth >= 7) sc.AddTransient(typeof(IPipelineBehavior<,>), typeof(DepthBehavior7<,>));
         if (depth >= 8) sc.AddTransient(typeof(IPipelineBehavior<,>), typeof(DepthBehavior8<,>));
-        return sc.BuildServiceProvider().GetRequiredService<ISender>();
+
+        return sc.BuildServiceProvider();
     }
 
     [Benchmark(Baseline = true)] public ValueTask<string> Send_Depth0() => _d0.Send(_ping);
@@ -109,23 +138,59 @@ public class PublishFanOutBenchmarks
     private ISender _h4 = default!;
     private ISender _h8 = default!;
     private ISender _h16 = default!;
+
+    private ServiceProvider _sp1 = default!;
+    private ServiceProvider _sp2 = default!;
+    private ServiceProvider _sp4 = default!;
+    private ServiceProvider _sp8 = default!;
+    private ServiceProvider _sp16 = default!;
+
     private readonly FanOutNotif _notif = new(42);
 
     [GlobalSetup]
     public void Setup()
     {
-        _h1 = Build(1);
-        _h2 = Build(2);
-        _h4 = Build(4);
-        _h8 = Build(8);
-        _h16 = Build(16);
+        _sp1 = BuildFanOutProvider(1);
+        _sp2 = BuildFanOutProvider(2);
+        _sp4 = BuildFanOutProvider(4);
+        _sp8 = BuildFanOutProvider(8);
+        _sp16 = BuildFanOutProvider(16);
+
+        _h1 = _sp1.GetRequiredService<ISender>();
+        _h2 = _sp2.GetRequiredService<ISender>();
+        _h4 = _sp4.GetRequiredService<ISender>();
+        _h8 = _sp8.GetRequiredService<ISender>();
+        _h16 = _sp16.GetRequiredService<ISender>();
     }
 
-    private static ISender Build(int count)
+    [GlobalCleanup]
+    public void Cleanup()
     {
-        var sc = new ServiceCollection().AddMediatoid(typeof(PublishFanOutBenchmarks).Assembly);
-        // Handlers assembly taraması ile eklenecek; burada manual eklemeye gerek yok çünkü sınıflar mevcut assembly'de.
-        return sc.BuildServiceProvider().GetRequiredService<ISender>();
+        _sp1?.Dispose();
+        _sp2?.Dispose();
+        _sp4?.Dispose();
+        _sp8?.Dispose();
+        _sp16?.Dispose();
+    }
+
+    private static ServiceProvider BuildFanOutProvider(int count)
+    {
+        var sc = new ServiceCollection().AddMediatoid(typeof(object).Assembly);
+
+        // Kademeli handler listesi; 'count' kadar manuel ekle
+        var handlerTypes = new[]
+        {
+            typeof(FanOutHandler1), typeof(FanOutHandler2), typeof(FanOutHandler3), typeof(FanOutHandler4),
+            typeof(FanOutHandler5), typeof(FanOutHandler6), typeof(FanOutHandler7), typeof(FanOutHandler8),
+            typeof(FanOutHandler9), typeof(FanOutHandler10), typeof(FanOutHandler11), typeof(FanOutHandler12),
+            typeof(FanOutHandler13), typeof(FanOutHandler14), typeof(FanOutHandler15), typeof(FanOutHandler16),
+        };
+
+        var toAdd = Math.Min(count, handlerTypes.Length);
+        for (var i = 0; i < toAdd; i++)
+            sc.AddTransient(typeof(INotificationHandler<FanOutNotif>), handlerTypes[i]);
+
+        return sc.BuildServiceProvider();
     }
 
     [Benchmark(Baseline = true)] public ValueTask Publish_Handlers1() => _h1.Publish(_notif);
@@ -148,27 +213,39 @@ public class ColdStartBenchmarks
 {
     private readonly ColdPing _req = new("hi");
     private ISender _warmSender = default!;
+    private ServiceProvider _warmSp = default!;
 
     [GlobalSetup]
     public void Setup()
     {
-        // Isınmış: ServiceProvider + ilk çağrı (cache dolumu)
-        var sp = new ServiceCollection().AddMediatoid(typeof(ColdStartBenchmarks).Assembly).BuildServiceProvider();
-        _warmSender = sp.GetRequiredService<ISender>();
+        // Nötr assembly + manuel handler kaydı (open generic depth behaviors sızmasın)
+        _warmSp = new ServiceCollection()
+            .AddMediatoid(typeof(object).Assembly)
+            .AddTransient<IRequestHandler<ColdPing, string>, ColdPingHandler>()
+            .BuildServiceProvider();
+
+        _warmSender = _warmSp.GetRequiredService<ISender>();
+
         // Ön ısınma (handler & behavior invoker cache)
         _ = _warmSender.Send(_req).GetAwaiter().GetResult();
     }
+
+    [GlobalCleanup]
+    public void Cleanup() => _warmSp?.Dispose();
 
     [Benchmark(Baseline = true)]
     public ValueTask<string> Send_Warm() => _warmSender.Send(_req);
 
     [Benchmark]
-    public ValueTask<string> Send_Cold()
+    public async ValueTask<string> Send_Cold()
     {
-        // Her ölçümde yeni ServiceProvider & ilk çağrı (soğuk başlangıç maliyeti dahil)
-        var sp = new ServiceCollection().AddMediatoid(typeof(ColdStartBenchmarks).Assembly).BuildServiceProvider();
+        await using var sp = new ServiceCollection()
+            .AddMediatoid(typeof(object).Assembly)
+            .AddTransient<IRequestHandler<ColdPing, string>, ColdPingHandler>()
+            .BuildServiceProvider();
+
         var sender = sp.GetRequiredService<ISender>();
-        return sender.Send(_req);
+        return await sender.Send(_req).ConfigureAwait(false);
     }
 }
 #endregion
