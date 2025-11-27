@@ -3,8 +3,9 @@ using System;
 namespace Mediatoid.SourceGen;
 
 /// <summary>
-/// Pipeline invoker zincirinin derleme zamanında üretilmesini tetiklemek için kök assembly işaretleyicisi.
-/// Bu attribute eklenmemişse generator yalnızca handler registration tablosunu üretir (mevcut davranış).
+/// Marks an assembly as a root for build-time pipeline invoker generation.
+/// If this attribute is not present, the generator only emits the handler
+/// registration table (current behavior).
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
 public sealed class MediatoidRootAttribute : Attribute

@@ -5,7 +5,8 @@ using Mediatoid.Pipeline;
 namespace Mediatoid.Behaviors;
 
 /// <summary>
-/// FluentValidation validator'larını çalıştırır; hatalıysa <see cref="ValidationException"/> fırlatır.
+/// Runs FluentValidation validators; throws <see cref="ValidationException"/>
+/// when the request is invalid.
 /// </summary>
 public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>

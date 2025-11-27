@@ -7,15 +7,17 @@ using System.Collections.Generic;
 namespace Mediatoid.SourceGen;
 
 /// <summary>
-/// Mediatoid için derleme zamanında handler kayıtlarını ve (root işaretlenmişse) tam request pipeline invoker sınıflarını üreten
-/// incremental source generator. Amaç: runtime reflection + davranış zinciri compose maliyetini düşürmek (Stage 2).
+/// Incremental source generator for Mediatoid that emits handler registrations
+/// and (when a root is marked) full request pipeline invoker types. The goal is
+/// to reduce runtime reflection and behavior-chain compose cost (Stage 2).
 /// </summary>
 [Generator]
 public sealed class MediatoidGenerator : IIncrementalGenerator
 {
     /// <summary>
-    /// Roslyn incremental pipeline yapılandırması: handler / behavior sınıflarını toplar, ilişkileri analiz eder ve
-    /// hızlı dispatch + pipeline invoker kaynak kodunu üretir. Duplicate / geçersiz durumlar için tanısal (diagnostic) kayıtlar ekler.
+    /// Configures the Roslyn incremental pipeline: gathers handler/behavior types,
+    /// analyzes their relationships and emits fast-dispatch + pipeline-invoker
+    /// source. Adds diagnostics for duplicate/invalid situations.
     /// </summary>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -186,7 +188,7 @@ public sealed class MediatoidGenerator : IIncrementalGenerator
             if (isRoot && handlerPairs.Count > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine("/// <summary>Build-time üretilen request pipeline invoker (handler + behavior zinciri).</summary>");
+                sb.AppendLine("/// <summary>Build-time generated request pipeline invoker (handler + behavior chain).</summary>");
 
                 var distinctHandlerPairs = handlerPairs
                     .GroupBy(h => (h.Req, h.Res), SymbolPairComparer.Instance)
@@ -315,20 +317,23 @@ public sealed class MediatoidGenerator : IIncrementalGenerator
 
             // Statik dispatch tipini üret (XML doküman eklendi)
             sb.AppendLine("/// <summary>");
-            sb.AppendLine("/// Source generator tarafından üretilen statik hızlı dispatch giriş noktası. Handler + pipeline invoker grafiklerini");
-            sb.AppendLine("/// build-time analizine göre kullanarak çalışma zamanında compose maliyetini azaltır. Root attribute yoksa başarısız döner.");
+            sb.AppendLine("/// Static fast-dispatch entry point emitted by the source generator.");
+            sb.AppendLine("/// Uses handler + pipeline invoker graphs built at compile time to reduce");
+            sb.AppendLine("/// compose cost at runtime. Returns failure when no root attribute is present.");
             sb.AppendLine("/// </summary>");
             sb.AppendLine("public static class MediatoidGeneratedDispatch");
             sb.AppendLine("{");
             sb.AppendLine("    /// <summary>");
-            sb.AppendLine("    /// Üretilmiş dispatch haritasını kullanarak isteği hızlı yoldan yürütür. Başarılı olduğunda compose işlemi (behavior zinciri + handler delegeleri)");
-            sb.AppendLine("    /// önceden oluşturulmuş invoker üzerinden çalışır; aksi halde <c>Success=false</c> döner ve çağıran runtime fallback'e geçebilir.");
+            sb.AppendLine("    /// Executes the request via the generated dispatch map. When successful,");
+            sb.AppendLine("    /// compose (behavior chain + handler delegates) runs through the prebuilt");
+            sb.AppendLine("    /// invoker; otherwise returns <c>Success=false</c> and the caller may");
+            sb.AppendLine("    /// fall back to the runtime pipeline.");
             sb.AppendLine("    /// </summary>");
-            sb.AppendLine("    /// <typeparam name=\"TResponse\">İstek yanıt tipi.</typeparam>");
-            sb.AppendLine("    /// <param name=\"request\">Gönderilen IRequest örneği.</param>");
-            sb.AppendLine("    /// <param name=\"sp\">Servis sağlayıcı (DI konteyner).</param>");
-            sb.AppendLine("    /// <param name=\"ct\">İptal belirteci.</param>");
-            sb.AppendLine("    /// <returns><c>Success=true</c> ise <c>Result</c> hızlı yol ValueTask'i; değilse default.</returns>");
+            sb.AppendLine("    /// <typeparam name=\"TResponse\">Request response type.</typeparam>");
+            sb.AppendLine("    /// <param name=\"request\">The IRequest instance being sent.</param>");
+            sb.AppendLine("    /// <param name=\"sp\">Service provider (DI container).</param>");
+            sb.AppendLine("    /// <param name=\"ct\">Cancellation token.</param>");
+            sb.AppendLine("    /// <returns><c>Success=true</c> when <c>Result</c> holds the fast-path ValueTask; otherwise default.</returns>");
             sb.AppendLine("    public static (bool Success, ValueTask<TResponse> Result) TryInvoke<TResponse>(global::Mediatoid.IRequest<TResponse> request, IServiceProvider sp, CancellationToken ct)");
             sb.AppendLine("    {");
             if (isRoot && handlerPairs.Count > 0)

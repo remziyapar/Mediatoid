@@ -1,88 +1,100 @@
 # Changelog
-Tüm anlamlı değişiklikler bu dosyada listelenir. Sürümleme SemVer'e uygundur.
+All notable changes to this project will be documented in this file. The format is based on SemVer.
+
+## [0.4.0-preview.2] - 2025-11-27
+### Added
+- New documentation: `docs/architecture-and-roadmap.md` (architecture layers, behavior contracts and the v0.4.x roadmap).
+- Contract-focused scenarios for SourceGen tests:
+	- Smoke tests that verify the existence of generated types and the dispatch API.
+	- Observation of pipeline behavior (before/after, short-circuit, ordering) across SourceGen + runtime paths.
+	- New pipeline behavior contracts for Publish and Stream:
+		- `INotificationBehavior<TNotification>` + `NotificationHandlerContinuation` (Publish).
+		- `IStreamBehavior<TRequest,TItem>` + `StreamHandlerContinuation<TItem>` (Stream).
+	- Runtime compose implementation for Publish and Stream (same semantics as Send):
+		- 0-behavior fast path is preserved.
+		- Inline compose for 1 and 2 behaviors, `Next()` pattern for more.
+		- Short-circuit and cancellation semantics aligned with Send.
+
+### Changed
+- Reworked SourceGen fast-path inside `Mediator` (GeneratedDispatchCache):
+	- If the generated type is not yet loaded in the AppDomain on the first call, the `_initialized` flag is not latched; subsequent `Send` calls retry.
+	- Once `Mediatoid.Generated.MediatoidGeneratedDispatch.TryInvoke` is successfully located, the fast-path is permanently enabled.
+- Simplified SourceGen tests by removing strict call-count expectations and validating via behavior log prefixes and diagnostic steps instead.
+	- Added targeted runtime tests for Publish/Stream (before/after, short-circuit, fan-out and truncated stream scenarios).
+
+### Notes
+- This release is **preview**; `Mediatoid.SourceGen` will continue to evolve throughout v0.4.x.
+- Upcoming items (summary):
+	- Integrate `MediatoidDiagnostics` into the SourceGen-generated pipeline chain.
+	- Add further contract tests to verify step-by-step behavioral equivalence between generated and runtime paths.
+	- Stabilize full pipeline-chain generation (handler + behaviors).
 
 ## [0.4.0-preview.1] - 2025-11-27
 ### Added
-- Yeni dokümantasyon: `docs/architecture-and-roadmap.md` (mimari katmanlar, davranış sözleşmeleri ve v0.4.x yol haritası).
-- SourceGen testleri için sözleşme odaklı senaryolar:
-	- Generated tiplerin ve dispatch API'sinin varlığını doğrulayan smoke testler.
-	- Pipeline davranışlarının (before/after, short-circuit, sıra) SourceGen + runtime yollarında gözlemlenmesi.
-
-### Changed
-- `Mediator` içinde SourceGen hızlı yolu (GeneratedDispatchCache) yeniden ele alındı:
-	- Generated tip ilk anda AppDomain'de yüklü değilse `_initialized` bayrağı latch edilmez; sonraki `Send` çağrılarında tekrar denenir.
-	- `Mediatoid.Generated.MediatoidGeneratedDispatch.TryInvoke` metodu başarıyla bulunduğunda fast-path kalıcı olarak devreye alınır.
-- SourceGen testleri, eski call-count beklentilerinden arındırılıp behavior log prefix'leri ve diagnostik adımlar üzerinden doğrulama yapacak şekilde sadeleştirildi.
-
-### Notes
-- Bu sürüm **preview** niteliğindedir; özellikle `Mediatoid.SourceGen` tarafı v0.4.x boyunca evrimleşmeye devam edecektir.
-- Gelecek iş listesi (özet):
-	- SourceGen ile üretilen pipeline zincirinde de `MediatoidDiagnostics` entegrasyonu.
-	- Generated ve runtime yolları arasında adım adım davranış eşitliğini test eden ek contract testleri.
-	- Tam pipeline zinciri üretiminin (handler + behaviors) stabilize edilmesi.
+- First 0.4.0 preview release; groundwork for Send pipeline semantics and SourceGen fast-path.
 
 ## [0.3.1] - 2025-11-22
 ### Changed
-- Performans (Send): Pipeline compose nested closure zinciri yerine tek `Next()` continuation + tek/iki behavior kısa yol; derinlik arttığında tahsis artışı azaltıldı.
-- Performans (Invoker'lar): `Expression.Compile` kaldırıldı; generic static lambda tabanlı handler/behavior/notification/stream invoker üretimi ile cold start süresi ve tahsisi düşürüldü.
-- Publish: Handler enumerasyonu tek seferde array'e materialize edilip boş durumda erken çıkış yapıldı.
+- Performance (Send): replaced nested closure pipeline compose with a single `Next()` continuation and single/two-behavior fast paths; reduced allocations for deeper pipelines.
+- Performance (Invokers): removed `Expression.Compile`; switched to generic static-lambda-based handler/behavior/notification/stream invoker generation to reduce cold-start time and allocations.
+- Publish: materialize handler enumeration into an array once and short-circuit early when empty.
 
-### Benchmark Özet (önce → sonra)
+### Benchmark Summary (before → after)
 - Send Baseline Alloc: ~1832 B → ~1448 B
 - Send Depth8 Alloc: ~2.85 KB → ~2.16 KB
 - Send Cold Start: ~25.68 µs / 26.6 KB → ~23.96 µs / 25.48 KB
 
 ### Notes
-- Public API değişmedi.
-- Tam pipeline zincirinin build-time üretimi (daha fazla cold start azaltımı) v0.4.0 hedefinde.
-- Benchmark detayları `docs/benchmarks.md` içinde.
+- Public API did not change.
+- Full pipeline-chain generation at build time (for further cold-start reduction) remains a v0.4.0 goal.
+- See `docs/benchmarks.md` for detailed benchmarks.
 
 ## [0.3.0] - 2025-11-18
 ### Added
-- Paket: Mediatoid.Behaviors (LoggingBehavior, ValidationBehavior).
-- Paket: Mediatoid.SourceGen (handler discovery için source generator; runtime reflection taraması handler kayıtlarında büyük ölçüde azaltıldı).
-- Yeni testler: ValidationAggregateTests, ExceptionPassthroughTests, LoggingNoLoggerTests, StreamBasicTests.
-- Validation: Birden çok validator hatası aggregate edilip `Mediatoid.Behaviors.ValidationException` olarak fırlatılır.
+- Package: Mediatoid.Behaviors (LoggingBehavior, ValidationBehavior).
+- Package: Mediatoid.SourceGen (source generator for handler discovery; significantly reduces runtime reflection for handler registrations).
+- New tests: ValidationAggregateTests, ExceptionPassthroughTests, LoggingNoLoggerTests, StreamBasicTests.
+- Validation: multiple validator errors are aggregated and thrown as `Mediatoid.Behaviors.ValidationException`.
 
 ### Changed
-- LoggingBehavior: ILogger yoksa sessiz çalışır (parametresiz ctor).
-- DI kayıtları: Behaviors open-generic `IPipelineBehavior<,>` altında transient olarak eklenir.
-- Handler çağrıları: SourceGen varsa registry üzerinden yapılır; yoksa mevcut delegate cache fallback.
+- LoggingBehavior: operates silently when no ILogger is available (parameterless ctor).
+- DI registrations: behaviors are added as open-generic `IPipelineBehavior<,>` with transient lifetime.
+- Handler invocation: uses the SourceGen registry when available; otherwise falls back to the existing delegate cache.
 
 ### Notes
-- Pipeline zinciri (behavior compose) hâlâ runtime’da deterministik (assembly parametre sırası + FullName ordinal). SourceGen şu sürümde yalnızca handler invoker optimizasyonu sağlar.
-- Public API (Core) değişmedi.
-- Bir sonraki aşama (v0.4.0): Tam pipeline invoker zincirinin generator ile üretimi + manifest tasarımı + benchmark dokümantasyonu.
+- The pipeline chain (behavior compose) remains deterministic at runtime (assembly parameter order + FullName ordinal). In this version, SourceGen only optimizes handler invocation.
+- Public API (Core) did not change.
+- Next step (v0.4.0): generate the full pipeline invoker chain via the generator, design a manifest, and document benchmarks.
 
 ## [0.2.1] - 2025-11-16
 ### Changed
-- Performans: Reflection `MethodInfo` erişimleri cache'lendi (Send/Publish/Stream).
-- Pipeline compose: LINQ `Reverse()` kaldırıldı; tahsis azaltıldı. Behavior yoksa kısa yol ile handler'a geçiş.
-- DI tarama: Aynı assembly tekrar verildiğinde tekilleştirme; `ReflectionTypeLoadException` durumunda yüklenebilen tiplerle devam.
+- Performance: cached reflection `MethodInfo` lookups for Send/Publish/Stream.
+- Pipeline compose: removed LINQ `Reverse()` to reduce allocations; added a fast path when there are no behaviors.
+- DI scanning: de-duplicated assemblies passed multiple times; on `ReflectionTypeLoadException`, continues with loadable types.
 
 ### Notes
-- Public API değişmedi (geriye dönük uyumlu).
+- Public API did not change (backwards compatible).
 
 ## [0.2.0] - 2025-11-15
 ### Added
-- Send pipeline semantiği belgelendi ve donduruldu (v0.2.0).
-- Yeni dokümantasyon: `docs/pipeline-semantics.md`.
-- README "Pipeline Davranışları (Send)" bölümü güncellendi.
+- Documented and locked Send pipeline semantics (v0.2.0).
+- New documentation: `docs/pipeline-semantics.md`.
+- Updated README "Pipeline Behaviors (Send)" section.
 
 ### Changed
-- Pipeline sıra/compose kuralları ve kapsamı (yalnızca Send) açıkça dokümante edildi.
-- Publish/Stream için pipeline olmadığı README'de netleştirildi.
+- Explicitly documented pipeline order/compose rules and scope (Send only).
+- Clarified in README that there was no pipeline for Publish/Stream at that time.
 
 ### Notes
-- Bu sürümde public API değişikliği yoktur (geriye dönük uyumludur).
-- Performans iyileştirmeleri bir sonraki patch/minor sürümlerde ele alınacaktır.
+- No public API changes in this release (backwards compatible).
+- Performance improvements were deferred to subsequent patch/minor versions.
 
 ## [0.1.0] - 2025-11-12
 ### Added
-- İlk sürüm (Initial release)
-- Core sözleşmeler: IRequest, IRequestHandler, INotification, INotificationHandler, ISender, IPipelineBehavior, IStreamRequest, IStreamRequestHandler
-- Send (Request/Response), Publish (Notification), Stream (IAsyncEnumerable) desteği
-- Pipeline davranışları (open generic) ve deterministik yürütme sırası
-- DI entegrasyonu: AddMediatoid(params Assembly[])
-- Basit reflection tabanlı handler keşfi
-- xUnit testleri (Send/Publish/Stream/Pipeline)
+- Initial release.
+- Core contracts: IRequest, IRequestHandler, INotification, INotificationHandler, ISender, IPipelineBehavior, IStreamRequest, IStreamRequestHandler.
+- Support for Send (Request/Response), Publish (Notification), Stream (IAsyncEnumerable).
+- Pipeline behaviors (open generic) with deterministic execution order.
+- DI integration: AddMediatoid(params Assembly[]).
+- Basic reflection-based handler discovery.
+- xUnit tests (Send/Publish/Stream/Pipeline).

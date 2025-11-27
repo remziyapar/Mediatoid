@@ -4,13 +4,15 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Mediatoid.Behaviors;
 
 /// <summary>
-/// Opsiyonel cross-cutting behavior kayıtları için DI yardımcı uzantılar.
+/// DI helper extensions for registering optional cross-cutting behaviors.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Logging ve Validation behavior'larını open generic <see cref="IPipelineBehavior{TRequest, TResponse}"/> altında transient olarak ekler.
-    /// FluentValidation yoksa Validation behavior no-op çalışır.
+    /// Registers Logging and Validation behaviors as open generic
+    /// <see cref="IPipelineBehavior{TRequest, TResponse}"/> with transient
+    /// lifetime. If FluentValidation is not available, the Validation behavior
+    /// becomes a no-op.
     /// </summary>
     public static IServiceCollection AddMediatoidBehaviors(this IServiceCollection services)
     {

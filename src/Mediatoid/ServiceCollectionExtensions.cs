@@ -5,15 +5,19 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Mediatoid;
 
 /// <summary>
-/// Mediatoid runtime kayıtlarını ve verilen derlemelerde (assemblies) handler/pipeline taramasını sağlayan DI uzantıları.
-/// Source generator çıktısı varsa, handler kayıtları jeneratörden alınır; değilse reflection taraması yapılır.
-/// Pipeline behaviors her zaman deterministik tarama ile kaydedilir.
+/// DI extensions that register Mediatoid runtime services and perform
+/// handler/pipeline scanning in the given assemblies. When source generator
+/// output is available, handler registrations are taken from the generator;
+/// otherwise reflection-based scanning is used. Pipeline behaviors are always
+/// registered using deterministic scanning.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Mediatoid runtime servislerini kaydeder ve verilen derlemelerde handler/pipeline implementasyonlarını tarar.
-    /// Source generator çıktısı mevcutsa handler kayıtları oradan yapılır, aksi halde reflection kullanılır.
+    /// Registers Mediatoid runtime services and scans the provided assemblies
+    /// for handler/pipeline implementations. If source generator output is
+    /// present, handler registrations are taken from there; otherwise
+    /// reflection is used.
     /// </summary>
     public static IServiceCollection AddMediatoid(this IServiceCollection services, params Assembly[] assemblies)
     {
@@ -46,6 +50,36 @@ public static class ServiceCollectionExtensions
                         if (type.IsGenericTypeDefinition)
                         {
                             services.AddTransient(typeof(IPipelineBehavior<,>), type);
+                            services.AddTransient(type); // open generic concrete
+                        }
+                        else
+                        {
+                            services.AddTransient(i, type);
+                            services.AddTransient(type); // closed concrete
+                        }
+                        continue;
+                    }
+
+                    if (def == typeof(INotificationBehavior<>))
+                    {
+                        if (type.IsGenericTypeDefinition)
+                        {
+                            services.AddTransient(typeof(INotificationBehavior<>), type);
+                            services.AddTransient(type); // open generic concrete
+                        }
+                        else
+                        {
+                            services.AddTransient(i, type);
+                            services.AddTransient(type); // closed concrete
+                        }
+                        continue;
+                    }
+
+                    if (def == typeof(IStreamBehavior<,>))
+                    {
+                        if (type.IsGenericTypeDefinition)
+                        {
+                            services.AddTransient(typeof(IStreamBehavior<,>), type);
                             services.AddTransient(type); // open generic concrete
                         }
                         else
@@ -89,8 +123,10 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Generated registry varsa: Maps alanını okuyup DI'a ekler, ayrıca duplicate kontrolü için set döndürür.
-    /// Concrete handler tipi yalnızca burada eklenir (generated pipeline invoker'ları concrete çözer).
+    /// When a generated registry is present, reads its <c>Maps</c> field and
+    /// adds entries to DI, returning a set used for duplicate detection. The
+    /// concrete handler type is only registered here (generated pipeline
+    /// invokers resolve concrete handlers).
     /// </summary>
     private static HashSet<(Type Service, Type Implementation)>? TryRegisterGeneratedHandlers(IServiceCollection services)
     {

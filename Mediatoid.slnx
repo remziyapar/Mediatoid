@@ -5,7 +5,11 @@
   </Folder>
   <Folder Name="/docs/" />
   <Folder Name="/eng/" />
-  <Folder Name="/samples/" />
+  <Folder Name="/samples/">
+    <Project Path="samples/BasicUsage/BasicUsage.csproj" />
+    <Project Path="samples/BehaviorsDemo/BehaviorsDemo.csproj" />
+    <Project Path="samples/SourceGenDemo/SourceGenDemo.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Mediatoid.Behaviors/Mediatoid.Behaviors.csproj" Id="f3296725-dbba-41fd-a1a0-48f6fd9af15a" />
     <Project Path="src/Mediatoid.Core/Mediatoid.Core.csproj" />

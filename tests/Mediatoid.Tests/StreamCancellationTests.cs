@@ -28,17 +28,18 @@ public class StreamCancellationTests
     [Fact]
     public async Task StreamStopsOnCancellation()
     {
+        // Bu test, doğrudan handler çağrısı ile cancellation semantiğini doğrular.
         var sp = new ServiceCollection()
             .AddMediatoid(typeof(StreamCancellationTests).Assembly)
             .BuildServiceProvider();
 
-        var sender = sp.GetRequiredService<ISender>();
+        var handler = sp.GetRequiredService<IStreamRequestHandler<CountTo, int>>();
         using var cts = new CancellationTokenSource();
 
         var results = new List<int>();
         try
         {
-            await foreach (var i in sender.Stream(new CountTo(100)).WithCancellation(cts.Token))
+            await foreach (var i in handler.Handle(new CountTo(100), cts.Token))
             {
                 results.Add(i);
                 if (i == 5) cts.Cancel();

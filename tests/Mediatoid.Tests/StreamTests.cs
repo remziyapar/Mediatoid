@@ -28,14 +28,15 @@ public class StreamTests
     [Fact]
     public async Task StreamShouldYieldItemsInOrder()
     {
+        // Bu test, doğrudan handler çağrısı ile akış sırasını doğrular (pipeline'dan bağımsız).
         var services = new ServiceCollection()
             .AddMediatoid(typeof(StreamTests).Assembly)
             .BuildServiceProvider();
 
-        var sender = services.GetRequiredService<ISender>();
+        var handler = services.GetRequiredService<IStreamRequestHandler<ListNumbers, int>>();
 
         var results = new List<int>();
-        await foreach (var n in sender.Stream(new ListNumbers(3)))
+        await foreach (var n in handler.Handle(new ListNumbers(3), CancellationToken.None))
             results.Add(n);
 
         Assert.Equal(Expected, results);

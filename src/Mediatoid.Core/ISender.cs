@@ -1,16 +1,17 @@
 namespace Mediatoid;
 
 /// <summary>
-/// İstek göndermek, bildirim yayınlamak ve akış üretmek için tek giriş noktası.
+/// Single entry point for sending requests, publishing notifications and
+/// producing streams.
 /// </summary>
 public interface ISender
 {
-    /// <summary>Request/Response işleyip yanıt döner.</summary>
+    /// <summary>Handles a request/response and returns the response.</summary>
     ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default);
 
-    /// <summary>Notification publish eder (tüm ilgili handler'ları çağırır).</summary>
+    /// <summary>Publishes a notification (invokes all matching handlers).</summary>
     ValueTask Publish(INotification notification, CancellationToken cancellationToken = default);
 
-    /// <summary>Stream isteğini işleyip öğeleri döndürür.</summary>
+    /// <summary>Handles a stream request and yields items.</summary>
     IAsyncEnumerable<TItem> Stream<TItem>(IStreamRequest<TItem> request, CancellationToken cancellationToken = default);
 }

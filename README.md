@@ -9,16 +9,16 @@
 [![NuGet (SourceGen)](https://img.shields.io/nuget/v/Mediatoid.SourceGen.svg)](https://www.nuget.org/packages/Mediatoid.SourceGen)
 [![Downloads (SourceGen)](https://img.shields.io/nuget/dt/Mediatoid.SourceGen.svg)](https://www.nuget.org/packages/Mediatoid.SourceGen)
 
-Hafif, performans odaklı, extensible bir Mediator kütüphanesi. CQRS için:
+Lightweight, performance-focused and extensible mediator library. Supports CQRS:
 
-  - Request/Response (Send)
-  - Notification (Publish)
-  - Stream (IAsyncEnumerable)
-  - Pipeline davranışları (open generic)
+- Request/Response (Send)
+- Notification (Publish)
+- Stream (IAsyncEnumerable)
+- Pipeline behaviors (open generic)
 
-Desteklenen TFM: `net8.0`
+Supported TFM: `net8.0`
 
-## Kurulum
+## Installation
 
 **CLI:**
 
@@ -27,32 +27,32 @@ dotnet add package Mediatoid
 ```
 
 **NuGet UI:**
-“Mediatoid” paketini ekleyin (`Mediatoid.Core` transitif gelir).
+Add the "Mediatoid" package (`Mediatoid.Core` comes transitively).
 
-## Hızlı Başlangıç
+## Quick Start
 
-**Program.cs (kurulum ve çağrılar):**
+**Program.cs (registration and calls):**
 
 ```csharp
 using Mediatoid;
 using Microsoft.Extensions.DependencyInjection;
 
-// Servisleri yapılandır
+// Configure services
 var services = new ServiceCollection()
-    .AddMediatoid(typeof(Program).Assembly) // Handler'ları tara
+    .AddMediatoid(typeof(Program).Assembly) // Scan handlers
     .BuildServiceProvider();
 
-// ISender servisini al
+// Resolve ISender
 var sender = services.GetRequiredService<ISender>();
 
-// Request/Response: Sipariş oluştur
+// Request/Response: create an order
 var id = await sender.Send(new CreateOrder("cust-1", 120m));
 Console.WriteLine($"Order ID: {id}");
 
-// Notification: Sipariş oluşturuldu bildirimi yayınla
+// Notification: publish order created event
 await sender.Publish(new OrderCreated(id));
 
-// Stream: Sayı listesini akış olarak al
+// Stream: consume a list of numbers as a stream
 await foreach (var number in sender.Stream(new ListNumbers(3)))
 {
     Console.WriteLine($"Streamed number: {number}");
@@ -104,9 +104,9 @@ public sealed class ListNumbersHandler : IStreamRequestHandler<ListNumbers, int>
 }
 ```
 
-## Pipeline Davranışları
+## Pipeline Behaviors
 
-Open-generic behavior tanımlayın; tarama ile otomatik kaydedilir.
+Define an open-generic behavior; it will be registered automatically via scanning.
 
 ```csharp
 using Mediatoid;
@@ -128,27 +128,30 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 }
 ```
 
-**Semantik (v0.2.0 ile donduruldu):**
+**Semantics (as of v0.4.0-preview.2):**
 
-  - **Kapsam:** Pipeline yalnızca `Send` için uygulanır. `Publish` ve `Stream` için pipeline yoktur.
-  - **Sıra:** Deterministik ve kayıt sırasına göre dıştan içe uygulanır.
-      - Assembly sırası: `AddMediatoid(asm1, asm2, ...)` parametre sırası.
-      - Her assembly içinde: `Type.FullName` alfabetik (Ordinal) sırası.
-  - **Lifetime:** Handler/behavior `Transient`, `ISender` `Scoped`.
-  - Open/closed generic birlikte desteklenir.
-  - Short-circuit mümkündür (continuation çağrılmayabilir).
-  - İptal ve hatalar wrap edilmeden yüzeye akar.
+  - **Scope:**
+      - `Send`: Request/Response pipeline (`IPipelineBehavior<TRequest,TResponse>`).
+      - `Publish`: Notification pipeline (`INotificationBehavior<TNotification>`).
+      - `Stream`: Stream pipeline (`IStreamBehavior<TRequest,TItem>`).
+  - **Order:** Deterministic; applied outer-to-inner by registration order.
+      - Assembly order: parameter order in `AddMediatoid(asm1, asm2, ...)`.
+      - Within an assembly: alphabetical `Type.FullName` (ordinal).
+  - **Lifetime:** Handlers/behaviors are `Transient`, `ISender` is `Scoped`.
+  - Open and closed generics are both supported.
+  - Short-circuit is possible (continuation may not be invoked).
+  - Cancellation and exceptions flow through without wrapping.
 
-**Detaylar:**
+**Details:**
 
-    - [Mimari ve Yol Haritası](https://github.com/remziyapar/Mediatoid/blob/main/docs/architecture-and-roadmap.md)
-    - [Pipeline Semantiği](https://github.com/remziyapar/Mediatoid/blob/main/docs/pipeline-semantics.md)
+- [Architecture and Roadmap](https://github.com/remziyapar/Mediatoid/blob/main/docs/architecture-and-roadmap.md)
+- [Pipeline Semantics](https://github.com/remziyapar/Mediatoid/blob/main/docs/pipeline-semantics.md)
 
-## Opsiyonel Paketler
+## Optional Packages
 
 ### Mediatoid.Behaviors
 
-Logging ve Validation davranışları:
+Provides out-of-the-box Logging and Validation behaviors:
 
 ```bash
 dotnet add package Mediatoid.Behaviors
@@ -156,17 +159,17 @@ dotnet add package FluentValidation
 dotnet add package FluentValidation.DependencyInjectionExtensions
 ```
 
-**Kullanım:**
+**Usage:**
 
 ```csharp
 var services = new ServiceCollection()
     .AddMediatoid(typeof(Program).Assembly)
-    .AddValidatorsFromAssembly(typeof(Program).Assembly) // FluentValidation kayıtları
+    .AddValidatorsFromAssembly(typeof(Program).Assembly) // FluentValidation
     .AddMediatoidBehaviors()                          // Logging + Validation
     .BuildServiceProvider();
 ```
 
-**Örnek validator:**
+**Example validator:**
 
 ```csharp
 using FluentValidation;
@@ -181,25 +184,37 @@ public sealed class CreateOrderValidator : AbstractValidator<CreateOrder>
 }
 ```
 
-> Geçersiz istekte `ValidationException` (Mediatoid.Behaviors) fırlatılır ve tüm hatalar aggregate edilir.
+> For invalid requests, `ValidationException` (from Mediatoid.Behaviors) is thrown and all errors are aggregated.
 
 ### Mediatoid.SourceGen
 
-Handler keşfini build-time’a taşır; runtime reflection ve `MethodInfo.Invoke` maliyetini azaltır.
+Moves handler discovery to build time; reduces runtime reflection and `MethodInfo.Invoke` overhead.
 
-**Kurulum:**
+**Installation:**
 
 ```bash
 dotnet add package Mediatoid.SourceGen
 ```
 
-Ek konfigurasyon gerekmez; paket eklendiğinde generator devreye girer. Pipeline davranış zinciri (behaviors) hâlâ runtime’da compose edilir (deterministik sıra korunur).
+Mark one or more roots with `MediatoidRootAttribute` so the generator knows where to start scanning for handlers. You can mark an assembly or a specific type:
 
-> **Not (preview):**
-> 0.4.0-preview.* sürümlerinde SourceGen tarafı hâlâ evrim halindedir. Tam pipeline zincirinin
-> (handler + behavior delegate’lerinin compile-time üretimi) ve diagnostik entegrasyonunun
-> v0.4.x serisinde kademeli olarak eklenmesi planlanmaktadır. Şu an SourceGen ağırlıklı olarak
-> handler terminal optimizasyonu ve temel dispatch hızlandırması sağlar.
+```csharp
+using Mediatoid.Core;
+
+[assembly: MediatoidRoot] // mark this assembly as a Mediatoid root
+
+// or on a type:
+[MediatoidRoot]
+public sealed class ApplicationRoot { }
+```
+
+Once the package is referenced and at least one root is marked, the generator is activated. The pipeline behavior chain is still composed at runtime (deterministic order is preserved).
+
+> **Note (preview):**
+> In 0.4.0-preview.* releases, the SourceGen side is still evolving. Full pipeline chain
+> generation (handler + behavior delegates) and diagnostic integration are planned to be
+> added gradually in the v0.4.x series. For now, SourceGen primarily provides handler
+> terminal optimization and basic dispatch speed-ups.
 
 ## Benchmark
 
@@ -223,33 +238,41 @@ IterationCount=15  WarmupCount=3
 | Stream_First10      | 9,763.4 ns | 478.12 ns | 447.24 ns | 23.38 |    1.09 | 0.0916 |     651 B |        1.04 |
 
 
-Yorumlar:
-- Send baseline ~420 ns; Logging eklemek ~+70% süre / ~+67% bellek (ek Stopwatch + ILogger formatı).
-- Validation eklemek ~+45% süre / ~+63% bellek (validator çalıştırma + sonuç nesneleri).
-- Publish iki handler çağrısında ~315 ns; fan-out handler sayısı ile lineer büyür.
-- Stream ilk 10 öğe ~9.7 µs (enumeration + async yield maliyeti).
+Notes:
+- Send baseline is ~420 ns; adding Logging costs ~+70% time / ~+67% memory (extra Stopwatch + ILogger formatting).
+- Adding Validation costs ~+45% time / ~+63% memory (running validators + result objects).
+- Publish with two handlers is ~315 ns; fan-out grows linearly with the number of handlers.
+- Stream first 10 items is ~9.7 µs (enumeration + async yield overhead).
 
-Not: SourceGen v0.3.* sürümünde handler terminal optimizasyonu sağlar; tam pipeline zincir üretimi geldiğinde baseline çağrı süresi daha da düşebilir.
+Note: In SourceGen v0.3.*, only the handler terminal is optimized; once full pipeline-chain
+generation lands, baseline call times can be reduced further.
 
-## Tasarım İlkeleri
+## Samples
 
-  - Minimal Core sözleşmeler
-  - Tek giriş: `ISender` (Send/Publish/Stream)
-  - `ValueTask` tabanlı asenkron akış
-  - Deterministik pipeline sırası
-  - Exception wrap yok (doğrudan fırlatma)
+You can find runnable sample applications under the `samples` folder:
 
-## Yol Haritası
+- `samples/BasicUsage` – minimal Send/Publish/Stream usage.
+- `samples/BehaviorsDemo` – using Logging and Validation behaviors.
+- `samples/SourceGenDemo` – using `Mediatoid.SourceGen` with `[MediatoidRoot]`.
 
-  - **Mediatoid.Behaviors:** Logging, Validation, Metrics, Retry/Idempotency
-  - **Mediatoid.SourceGen:** Pipeline zinciri üretimi (tam optimizasyon)
-  - **Mediatoid.AspNetCore:** Minimal API helper’lar
-  - **Publish/Stream için pipeline** (RFC değerlendirme)
+## Design Principles
+
+    - Minimal core contracts
+    - Single entry point: `ISender` (Send/Publish/Stream)
+    - `ValueTask`-based async flows
+    - Deterministic pipeline order
+    - No exception wrapping (propagate original exception)
+
+## Roadmap
+
+    - **Mediatoid.Behaviors:** Logging, Validation, Metrics, Retry/Idempotency
+    - **Mediatoid.SourceGen:** Pipeline chain generation (full optimization)
+    - **Mediatoid.AspNetCore:** Minimal API helpers
 
 ## Changelog
 
-Bkz. [CHANGELOG.md](https://github.com/remziyapar/Mediatoid/blob/main/CHANGELOG.md)
+See [CHANGELOG.md](https://github.com/remziyapar/Mediatoid/blob/main/CHANGELOG.md)
 
-## Lisans
+## License
 
 MIT — [LICENSE](https://github.com/remziyapar/Mediatoid/blob/main/LICENSE)

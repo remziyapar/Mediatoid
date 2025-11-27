@@ -32,8 +32,10 @@ internal static class MediatoidDiagnostics
 }
 
 /// <summary>
-/// Runtime mediator: Send / Publish / Stream işlemlerini gerçekleştirir. Source generator devredeyse
-/// statik dispatch hızlı yolu (MediatoidGeneratedDispatch) denenir; değilse reflection tabanlı compose fallback devreye girer.
+/// Runtime mediator that performs Send/Publish/Stream operations. When source
+/// generator output is available, it first tries the static dispatch fast path
+/// (<c>MediatoidGeneratedDispatch</c>); otherwise, it falls back to a
+/// reflection-based composed pipeline.
 /// </summary>
 internal sealed class Mediator(IServiceProvider sp) : ISender
 {
@@ -169,6 +171,27 @@ internal sealed class Mediator(IServiceProvider sp) : ISender
                 => ((INotificationHandler<TNotification>)handler).Handle((TNotification)notification, ct);
     }
 
+    private static class NotificationBehaviorInvokerCache
+    {
+        private static readonly ConcurrentDictionary<Type, Func<object, INotification, NotificationHandlerContinuation, CancellationToken, ValueTask>> Cache = new();
+        private static readonly MethodInfo BehaviorBuildTyped = typeof(NotificationBehaviorInvokerCache)
+            .GetMethod(nameof(BuildTyped), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        public static Func<object, INotification, NotificationHandlerContinuation, CancellationToken, ValueTask> Get(Type behaviorInterface, Type notificationType)
+            => Cache.GetOrAdd(behaviorInterface, _ => Build(notificationType));
+
+        private static Func<object, INotification, NotificationHandlerContinuation, CancellationToken, ValueTask> Build(Type notificationType)
+        {
+            var closed = BehaviorBuildTyped.MakeGenericMethod(notificationType);
+            return (Func<object, INotification, NotificationHandlerContinuation, CancellationToken, ValueTask>)closed.Invoke(null, Array.Empty<object>())!;
+        }
+
+        private static Func<object, INotification, NotificationHandlerContinuation, CancellationToken, ValueTask> BuildTyped<TNotification>()
+            where TNotification : INotification
+            => static (behavior, notification, continuation, ct)
+                => ((INotificationBehavior<TNotification>)behavior).Handle((TNotification)notification, continuation, ct);
+    }
+
     private static class StreamInvokerCache<TItem>
     {
         private static readonly ConcurrentDictionary<(Type HandlerInterface, Type RequestType), Func<object, IStreamRequest<TItem>, CancellationToken, IAsyncEnumerable<TItem>>> Cache = new();
@@ -188,6 +211,27 @@ internal sealed class Mediator(IServiceProvider sp) : ISender
             where TRequest : IStreamRequest<TItem>
             => static (handler, request, ct)
                 => ((IStreamRequestHandler<TRequest, TItem>)handler).Handle((TRequest)request, ct);
+    }
+
+    private static class StreamBehaviorInvokerCache<TItem>
+    {
+        private static readonly ConcurrentDictionary<Type, Func<object, IStreamRequest<TItem>, StreamHandlerContinuation<TItem>, CancellationToken, IAsyncEnumerable<TItem>>> Cache = new();
+        private static readonly MethodInfo BehaviorBuildTyped = typeof(StreamBehaviorInvokerCache<TItem>)
+            .GetMethod(nameof(BuildTyped), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+        public static Func<object, IStreamRequest<TItem>, StreamHandlerContinuation<TItem>, CancellationToken, IAsyncEnumerable<TItem>> Get(Type behaviorInterface, Type requestType)
+            => Cache.GetOrAdd(behaviorInterface, _ => Build(requestType));
+
+        private static Func<object, IStreamRequest<TItem>, StreamHandlerContinuation<TItem>, CancellationToken, IAsyncEnumerable<TItem>> Build(Type requestType)
+        {
+            var closed = BehaviorBuildTyped.MakeGenericMethod(requestType);
+            return (Func<object, IStreamRequest<TItem>, StreamHandlerContinuation<TItem>, CancellationToken, IAsyncEnumerable<TItem>>)closed.Invoke(null, Array.Empty<object>())!;
+        }
+
+        private static Func<object, IStreamRequest<TItem>, StreamHandlerContinuation<TItem>, CancellationToken, IAsyncEnumerable<TItem>> BuildTyped<TRequest>()
+            where TRequest : IStreamRequest<TItem>
+            => static (behavior, request, continuation, ct)
+                => ((IStreamBehavior<TRequest, TItem>)behavior).Handle((TRequest)request, continuation, ct);
     }
 
     public async ValueTask<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
@@ -350,8 +394,86 @@ internal sealed class Mediator(IServiceProvider sp) : ISender
 
         var invoker = NotificationInvokerCache.Get(handlerInterface, notificationType);
 
-        for (int i = 0; i < handlers.Length; i++)
-            await invoker(handlers[i], notification, cancellationToken).ConfigureAwait(false);
+        // Behaviors
+        var behaviorInterface = typeof(INotificationBehavior<>).MakeGenericType(notificationType);
+        var behaviorsEnumerable = (IEnumerable<object>?)_sp.GetService(typeof(IEnumerable<>).MakeGenericType(behaviorInterface)) ?? Array.Empty<object>();
+        var behaviors = behaviorsEnumerable as object[] ?? behaviorsEnumerable.ToArray();
+
+        // Concrete dedup
+        if (behaviors.Length > 1)
+        {
+            var seenConcrete = new HashSet<Type>();
+            var concreteUnique = new List<object>(behaviors.Length);
+            foreach (var b in behaviors)
+            {
+                var t = b.GetType();
+                if (seenConcrete.Add(t))
+                    concreteUnique.Add(b);
+            }
+            behaviors = concreteUnique.ToArray();
+        }
+
+        // Generic definition dedup
+        if (behaviors.Length > 1)
+        {
+            var seenGenDef = new HashSet<Type>();
+            var genUnique = new List<object>(behaviors.Length);
+            foreach (var b in behaviors)
+            {
+                var t = b.GetType();
+                var key = t.IsGenericType ? t.GetGenericTypeDefinition() : t;
+                if (seenGenDef.Add(key))
+                    genUnique.Add(b);
+            }
+            behaviors = genUnique.ToArray();
+        }
+
+        // 0 behavior: eski davranışı koru
+        if (behaviors.Length == 0)
+        {
+            for (int i = 0; i < handlers.Length; i++)
+                await invoker(handlers[i], notification, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        // Tek continuation: tüm handler zincirini temsil eder
+        NotificationHandlerContinuation TerminalContinuation = async () =>
+        {
+            for (int i = 0; i < handlers.Length; i++)
+                await invoker(handlers[i], notification, cancellationToken).ConfigureAwait(false);
+        };
+
+        NotificationHandlerContinuation continuation = TerminalContinuation;
+
+        var behaviorInvoker = NotificationBehaviorInvokerCache.Get(behaviorInterface, notificationType);
+
+        // 1 ve 2 behavior için inline compose, daha fazlası için Next pattern'i
+        if (behaviors.Length == 1)
+        {
+            await behaviorInvoker(behaviors[0], notification, continuation, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (behaviors.Length == 2)
+        {
+            // behaviors[1] içe, behaviors[0] dışa sarılır
+            NotificationHandlerContinuation c1 = () => behaviorInvoker(behaviors[1], notification, continuation, cancellationToken);
+            await behaviorInvoker(behaviors[0], notification, c1, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        int index = 0;
+        NotificationHandlerContinuation Next()
+        {
+            if (index >= behaviors.Length)
+                return continuation;
+
+            var current = behaviors[index++];
+            return () => behaviorInvoker(current, notification, Next(), cancellationToken);
+        }
+
+        var root = Next();
+        await root().ConfigureAwait(false);
     }
 
     public IAsyncEnumerable<TItem> Stream<TItem>(IStreamRequest<TItem> request, CancellationToken cancellationToken = default)
@@ -364,6 +486,71 @@ internal sealed class Mediator(IServiceProvider sp) : ISender
             ?? throw new InvalidOperationException($"No stream handler registered for request type '{requestType.FullName}'.");
 
         var invoker = StreamInvokerCache<TItem>.Get(handlerInterface, requestType);
-        return invoker(handler, request, cancellationToken);
+
+        // Behaviors
+        var behaviorInterface = typeof(IStreamBehavior<,>).MakeGenericType(requestType, typeof(TItem));
+        var behaviorsEnumerable = (IEnumerable<object>?)_sp.GetService(typeof(IEnumerable<>).MakeGenericType(behaviorInterface)) ?? Array.Empty<object>();
+        var behaviors = behaviorsEnumerable as object[] ?? behaviorsEnumerable.ToArray();
+
+        // Concrete dedup
+        if (behaviors.Length > 1)
+        {
+            var seenConcrete = new HashSet<Type>();
+            var concreteUnique = new List<object>(behaviors.Length);
+            foreach (var b in behaviors)
+            {
+                var t = b.GetType();
+                if (seenConcrete.Add(t))
+                    concreteUnique.Add(b);
+            }
+            behaviors = concreteUnique.ToArray();
+        }
+
+        // Generic definition dedup
+        if (behaviors.Length > 1)
+        {
+            var seenGenDef = new HashSet<Type>();
+            var genUnique = new List<object>(behaviors.Length);
+            foreach (var b in behaviors)
+            {
+                var t = b.GetType();
+                var key = t.IsGenericType ? t.GetGenericTypeDefinition() : t;
+                if (seenGenDef.Add(key))
+                    genUnique.Add(b);
+            }
+            behaviors = genUnique.ToArray();
+        }
+
+        // 0 behavior: eski davranışı koru
+        if (behaviors.Length == 0)
+            return invoker(handler, request, cancellationToken);
+
+        var behaviorInvoker = StreamBehaviorInvokerCache<TItem>.Get(behaviorInterface, requestType);
+
+        // Terminal continuation: handler akışı
+        StreamHandlerContinuation<TItem> terminal = () => invoker(handler, request, cancellationToken);
+
+        // 1 ve 2 behavior için inline compose, daha fazlası için Next pattern'i
+        if (behaviors.Length == 1)
+            return behaviorInvoker(behaviors[0], request, terminal, cancellationToken);
+
+        if (behaviors.Length == 2)
+        {
+            StreamHandlerContinuation<TItem> c1 = () => behaviorInvoker(behaviors[1], request, terminal, cancellationToken);
+            return behaviorInvoker(behaviors[0], request, c1, cancellationToken);
+        }
+
+        int index = 0;
+        StreamHandlerContinuation<TItem> Next()
+        {
+            if (index >= behaviors.Length)
+                return terminal;
+
+            var current = behaviors[index++];
+            return () => behaviorInvoker(current, request, Next(), cancellationToken);
+        }
+
+        var root = Next();
+        return root();
     }
 }

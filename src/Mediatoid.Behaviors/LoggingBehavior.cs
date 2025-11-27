@@ -5,22 +5,22 @@ using System.Diagnostics;
 namespace Mediatoid.Behaviors;
 
 /// <summary>
-/// İstek işlemeyi süre ve hata açısından basitçe loglayan behavior (debug seviyesinde).
-/// ILogger yoksa sessiz çalışır.
+/// Simple debug-level behavior that logs request processing duration and
+/// errors. Runs silently when no <see cref="ILogger"/> is available.
 /// </summary>
 public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly ILogger? _logger;
 
-    /// <summary>ILogger sağlamayan tüketiciler için sessiz varsayılan kurucu.</summary>
+    /// <summary>Silent default constructor for consumers that do not provide an ILogger.</summary>
     public LoggingBehavior() { }
 
-    /// <summary>Logger mevcutsa DI tarafından seçilecek kurucu.</summary>
+    /// <summary>Constructor selected by DI when a logger is available.</summary>
     public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
         => _logger = logger;
 
-    /// <summary>İsteği devam ettirmeden önce/sonra loglar ve süreyi ölçer (ILogger varsa).</summary>
+    /// <summary>Logs before/after executing the request and measures duration when a logger is available.</summary>
     public async ValueTask<TResponse> Handle(
         TRequest request,
         RequestHandlerContinuation<TResponse> continuation,
