@@ -1,6 +1,6 @@
-# Mediatoid Architecture and Roadmap (v0.4.0 Focus)
+# Mediatoid Architecture and Roadmap (v0.4.0)
 
-This document summarizes the architectural layers of the Mediatoid library, the behavior contracts that are guaranteed today, and the improvements targeted for the v0.4.0 series.
+This document summarizes the architectural layers of the Mediatoid library, the behavior contracts that are guaranteed today, and the improvements shipped in the v0.4.0 series.
 
 ---
 
@@ -51,9 +51,9 @@ Mediatoid is designed with a layered architecture. Each layer has clear responsi
 
 - **Purpose:**
   - Reduce runtime cost by moving handler discovery and selected pipeline pieces to build time.
-- **v0.3.x Status:**
-  - Optimizes the handler terminal.
-  - The pipeline behavior chain is still composed at runtime.
+- **v0.4.0 Status:**
+  - Optimizes the handler terminal and integrates with the full pipeline semantics (Send/Publish/Stream).
+  - The pipeline behavior chain is still composed at runtime; full compile-time pipeline generation remains a roadmap item.
 - **Core Principle:**
   - Functional behavior must be **equivalent** to the `Mediatoid` runtime path.
   - SourceGen provides performance optimizations only; it must not change semantics.
@@ -82,17 +82,17 @@ This section summarizes the behavior that is guaranteed to users today. Details 
 
 - All registered notification handlers are invoked.
 - Handlers are executed sequentially.
-- In earlier versions there was no pipeline behavior for `Publish`; as of v0.4.0-preview.2, `INotificationBehavior<TNotification>` is available and follows the same pipeline semantics as `Send`.
+- In earlier versions there was no pipeline behavior for `Publish`; as of v0.4.0, `INotificationBehavior<TNotification>` is available and follows the same pipeline semantics as `Send`.
 
 ### 2.4. `Stream` (IAsyncEnumerable)
 
 - A single stream handler is executed for `IStreamRequest<TItem>`.
 - Cancellation and error semantics are controlled by the handler implementation.
-- In earlier versions there was no pipeline behavior for `Stream`; as of v0.4.0-preview.2, `IStreamBehavior<TRequest,TItem>` is available and follows the same pipeline semantics as `Send`.
+- In earlier versions there was no pipeline behavior for `Stream`; as of v0.4.0, `IStreamBehavior<TRequest,TItem>` is available and follows the same pipeline semantics as `Send`.
 
 ---
 
-## 3. Goals for the Source Generator (v0.4.0 Focus)
+## 3. Goals for the Source Generator (v0.4.x+)
 
 ### 3.1. Behavioral Equivalence
 
@@ -115,7 +115,7 @@ This section summarizes the behavior that is guaranteed to users today. Details 
 
 ### 3.3. Full Pipeline Chain Generation
 
-- Target for the v0.4.0 series:
+- Target for the v0.4.x+ series:
   - Generate the full handler + pipeline behavior chain at compile time.
 - **Constraint:**
   - The generated pipeline chain must obey the **same order** and **same deduplication rules** as the runtime compose path.
@@ -134,7 +134,7 @@ This section summarizes the behavior that is guaranteed to users today. Details 
 
 ### 4.2. Stable Contract
 
-- With v0.4.0, the core shape of the diagnostic API will be defined and documented.
+- With v0.4.0, the core shape of the diagnostic API is defined and documented.
 - Because this API has a high breaking impact, changes will be versioned carefully.
 
 ---
@@ -159,9 +159,9 @@ This section summarizes the behavior that is guaranteed to users today. Details 
 
 ---
 
-## 6. Summary Goals for v0.4.0
+## 6. Summary Goals for v0.4.0 and Beyond
 
-This section summarizes the main areas of focus for the v0.4.0 series (0.4.x).
+This section summarizes the main areas of focus for the v0.4.0 release and follow-up 0.4.x+ work.
 
 1. **SourceGen Behavioral Equivalence**
   - Ensure functionally identical behavior between generated and runtime paths.

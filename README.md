@@ -128,7 +128,7 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 }
 ```
 
-**Semantics (as of v0.4.0-preview.2):**
+**Semantics (as of v0.4.0):**
 
   - **Scope:**
       - `Send`: Request/Response pipeline (`IPipelineBehavior<TRequest,TResponse>`).
@@ -210,42 +210,71 @@ public sealed class ApplicationRoot { }
 
 Once the package is referenced and at least one root is marked, the generator is activated. The pipeline behavior chain is still composed at runtime (deterministic order is preserved).
 
-> **Note (preview):**
-> In 0.4.0-preview.* releases, the SourceGen side is still evolving. Full pipeline chain
-> generation (handler + behavior delegates) and diagnostic integration are planned to be
-> added gradually in the v0.4.x series. For now, SourceGen primarily provides handler
-> terminal optimization and basic dispatch speed-ups.
+> **Note (roadmap):**
+> In the v0.4.x line, the SourceGen side will continue to evolve. Full pipeline chain
+> generation (handler + behavior delegates) and deeper diagnostic integration are planned
+> as incremental improvements. Today, SourceGen primarily provides handler terminal
+> optimization and basic dispatch speed-ups.
+
+### NativeAOT and Trimming
+
+Mediatoid works fine on .NET 8 in normal JIT deployments. The current
+runtime implementation (`Mediator` + reflection-based discovery) uses
+APIs like `Assembly.GetTypes()`, `MethodInfo.MakeGenericMethod` and
+`Type.MakeGenericType`, which do not yet have a fully annotated
+NativeAOT/trimming story.
+
+- **Status in 0.4.0:**
+    - NativeAOT and aggressive trimming are **experimental** only.
+    - Small demo apps may work, but the library does **not** yet claim
+        full AOT safety or zero-warning trimming.
+- **Planned for 0.5.0+:**
+    - Move more of the discovery/registration logic into SourceGen so the
+        runtime reflection path can be minimized or skipped in AOT builds.
+    - Introduce configuration/guards so AOT builds can rely primarily on
+        generated dispatch rather than runtime `MakeGenericMethod`/
+        `MakeGenericType`.
+
+If you want to experiment with NativeAOT today, treat it as
+best-effort and always validate your own publish output (warnings,
+linker/AOT logs) for your specific app.
 
 ## Benchmark
 
+The following numbers are from `Mediatoid.Benchmarks` on a local
+machine (Release, .NET 8, BenchmarkDotNet). They are **ballpark
+figures**, not a public SLA; always run the benchmarks in your own
+environment if you care about exact numbers.
+
+**SourceGen vs runtime compose (Send):**
+
+| Method              | Mean      | Allocated |
+|-------------------- |----------:|----------:|
+| Send_SourceGen      | ~12.6 µs  |   8.1 KB  |
+| Send_RuntimeCompose | ~13.6 µs  |   8.1 KB  |
+
+- SourceGen is roughly **1.07× faster** than the runtime compose
+    path for the simple Send scenario measured here.
+
+**Publish fan-out (notification handlers):**
+
+| Handlers | Mean (ns) | Allocated |
+|---------:|----------:|----------:|
+| 1        |    ~515   |   ~480 B  |
+| 2        |    ~574   |   ~512 B  |
+| 4        |    ~583   |   ~576 B  |
+| 8        |    ~642   |   ~704 B  |
+| 16       |    ~710   |   ~960 B  |
+
+- Publish cost grows roughly **linearly** with the number of
+    handlers, with small per-handler allocation overhead.
+
+For full details (hardware, .NET version, raw output), see the
+generated reports under `BenchmarkDotNet.Artifacts/results` or run:
+
+```powershell
+dotnet run -c Release -p .\benchmarks\Mediatoid.Benchmarks\Mediatoid.Benchmarks.csproj
 ```
-
-BenchmarkDotNet v0.13.12, Windows 11 (10.0.26200.7171)
-12th Gen Intel Core i7-1255U, 1 CPU, 12 logical and 10 physical cores
-.NET SDK 10.0.100
-  [Host]     : .NET 8.0.22 (8.0.2225.52707), X64 RyuJIT AVX2
-  Job-BDRULP : .NET 8.0.22 (8.0.2225.52707), X64 RyuJIT AVX2
-
-IterationCount=15  WarmupCount=3  
-
-```
-| Method              | Mean       | Error     | StdDev    | Ratio | RatioSD | Gen0   | Allocated | Alloc Ratio |
-|-------------------- |-----------:|----------:|----------:|------:|--------:|-------:|----------:|------------:|
-| Send_Baseline       |   419.3 ns |   7.64 ns |   6.77 ns |  1.00 |    0.00 | 0.0992 |     624 B |        1.00 |
-| Send_WithLogging    |   717.5 ns |   6.95 ns |   6.50 ns |  1.71 |    0.04 | 0.1650 |    1040 B |        1.67 |
-| Send_WithValidation |   607.4 ns |   6.92 ns |   6.13 ns |  1.45 |    0.02 | 0.1612 |    1016 B |        1.63 |
-| Publish_TwoHandlers |   314.8 ns |  25.97 ns |  21.69 ns |  0.75 |    0.05 | 0.0548 |     344 B |        0.55 |
-| Stream_First10      | 9,763.4 ns | 478.12 ns | 447.24 ns | 23.38 |    1.09 | 0.0916 |     651 B |        1.04 |
-
-
-Notes:
-- Send baseline is ~420 ns; adding Logging costs ~+70% time / ~+67% memory (extra Stopwatch + ILogger formatting).
-- Adding Validation costs ~+45% time / ~+63% memory (running validators + result objects).
-- Publish with two handlers is ~315 ns; fan-out grows linearly with the number of handlers.
-- Stream first 10 items is ~9.7 µs (enumeration + async yield overhead).
-
-Note: In SourceGen v0.3.*, only the handler terminal is optimized; once full pipeline-chain
-generation lands, baseline call times can be reduced further.
 
 ## Samples
 

@@ -24,7 +24,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   <!-- Version -->
-    <Version>0.4.0-preview.2</Version>
+    <Version>0.4.0</Version>
     <PackageVersion>$(Version)</PackageVersion>
     <AssemblyInformationalVersion>$(Version)</AssemblyInformationalVersion>
     <AssemblyVersion>0.4.0.0</AssemblyVersion>

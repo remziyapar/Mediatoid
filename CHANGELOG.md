@@ -1,6 +1,25 @@
 # Changelog
 All notable changes to this project will be documented in this file. The format is based on SemVer.
 
+## [0.4.0] - 2025-11-28
+### Added
+- Pipeline behaviors for `Publish` and `Stream` are now part of the stable release:
+	- `INotificationBehavior<TNotification>` + `NotificationHandlerContinuation` (Publish).
+	- `IStreamBehavior<TRequest,TItem>` + `StreamHandlerContinuation<TItem>` (Stream).
+- Source generator integration aligned with the runtime semantics for Send/Publish/Stream.
+- New contract-focused tests for SourceGen to validate behavioral equivalence with the runtime path.
+- Benchmarks project and README benchmark summary updated to reflect the 0.4.0 performance picture.
+
+### Changed
+- Documentation refresh:
+	- `docs/architecture-and-roadmap.md` updated from "v0.4.0 focus" to the shipped 0.4.0 state and 0.4.x+ roadmap.
+	- README updated with the new pipeline semantics and benchmark summary.
+- Clarified that NativeAOT and heavy trimming support is **experimental** in 0.4.0 and targeted for deeper improvements in 0.5.0+.
+
+### Notes
+- The full compile-time pipeline-chain generation (handlers + behaviors) remains a 0.4.x+ roadmap item.
+- NativeAOT: small demo apps may work, but full AOT-safety/zero-warning trimming is not yet guaranteed; treat NativeAOT as experimental for now.
+
 ## [0.4.0-preview.2] - 2025-11-27
 ### Added
 - New documentation: `docs/architecture-and-roadmap.md` (architecture layers, behavior contracts and the v0.4.x roadmap).
